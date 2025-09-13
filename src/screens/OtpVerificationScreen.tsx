@@ -124,7 +124,7 @@ export default function OTPVerificationScreen({ navigation, route }: Props) {
       Alert.alert('Incomplete OTP', 'Please enter the complete 6-digit OTP');
       return;
     }
-
+  
     // Button animation
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -138,16 +138,21 @@ export default function OTPVerificationScreen({ navigation, route }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
-
+  
     // Simulate OTP verification
     const otpString = otp.join('');
     console.log('Verifying OTP:', otpString, 'for phone:', phone);
     
-    // Navigate to dashboard or next screen
-    Alert.alert('Success!', 'OTP verified successfully', [
-      { text: 'OK', onPress: () => navigation.navigate('Dashboard') }
-    ]);
+    // Navigate based on ride type
+    if (rideType === 'new') {
+      // New driver - go to registration screen
+      navigation.navigate('DriverRegistration', { phone });
+    } else {
+      // Continuing driver - go directly to dashboard
+      navigation.navigate('Dashboard');
+    }
   };
+  
 
   const handleResendOTP = () => {
     if (!canResend) return;

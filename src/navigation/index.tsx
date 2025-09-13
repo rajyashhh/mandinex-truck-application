@@ -8,6 +8,7 @@ export type RootStackParamList = {
   StartRide: undefined;
   Login: { rideType?: 'new' | 'continue' } | undefined;
   OTPVerification: { phone: string; rideType: 'new' | 'continue' };
+  DriverRegistration: { phone: string };
   Dashboard: undefined;
 };
 
@@ -19,6 +20,7 @@ export default function AppNavigation() {
   const StartRideScreen = require('../screens/StartRideScreen').default;
   const LoginScreen = require('../screens/LoginScreen').default;
   const OTPVerificationScreen = require('../screens/OtpVerificationScreen').default;
+  const DriverRegistrationScreen = require('../screens/DriverRegistrationScreen').default;
   const DashboardScreen = require('../screens/DashboardScreen').default;
 
   return (
@@ -28,6 +30,7 @@ export default function AppNavigation() {
         <Stack.Screen name="StartRide" component={StartRideScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+        <Stack.Screen name="DriverRegistration" component={DriverRegistrationScreen} />
         <Stack.Screen name="Dashboard" component={DashboardScreen} />
       </Stack.Navigator>
     </NavigationContainer>

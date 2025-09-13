@@ -25,6 +25,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to upload vehicle permits.",
+          "cameraPermission": "The app accesses your camera to take photos of vehicle permits.",
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }
