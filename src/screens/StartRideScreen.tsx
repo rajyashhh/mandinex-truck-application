@@ -15,25 +15,24 @@ import type { RootStackParamList } from '../navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StartRide'>;
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function StartRideScreen({ navigation }: Props) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim1 = useRef(new Animated.Value(50)).current;
   const slideAnim2 = useRef(new Animated.Value(50)).current;
-  const scaleAnim1 = useRef(new Animated.Value(0.9)).current;
-  const scaleAnim2 = useRef(new Animated.Value(0.9)).current;
+  const scaleAnim1 = useRef(new Animated.Value(0.95)).current;
+  const scaleAnim2 = useRef(new Animated.Value(0.95)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Staggered animations
+    // Smooth entrance animations
     Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
       Animated.stagger(200, [
         Animated.parallel([
           Animated.timing(slideAnim1, {
@@ -43,7 +42,7 @@ export default function StartRideScreen({ navigation }: Props) {
           }),
           Animated.spring(scaleAnim1, {
             toValue: 1,
-            tension: 100,
+            tension: 80,
             friction: 8,
             useNativeDriver: true,
           }),
@@ -56,13 +55,29 @@ export default function StartRideScreen({ navigation }: Props) {
           }),
           Animated.spring(scaleAnim2, {
             toValue: 1,
-            tension: 100,
+            tension: 80,
             friction: 8,
             useNativeDriver: true,
           }),
         ]),
       ]),
     ]).start();
+
+    // Subtle pulse for logo
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
   const handleNewRide = () => {
@@ -75,34 +90,55 @@ export default function StartRideScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Section */}
-      <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-        <View style={styles.logoContainer}>
-          <Logo size={50} />
+      {/* Agritech Background Pattern */}
+      <View style={styles.backgroundPattern}>
+        <View style={styles.topCircle} />
+        <View style={styles.bottomCircle} />
+        <View style={styles.fieldLines}>
+          {[...Array(8)].map((_, i) => (
+            <View key={i} style={[styles.fieldLine, { top: i * 60 }]} />
+          ))}
         </View>
-        <Text style={styles.welcomeText}>Welcome Back, Driver</Text>
-        <Text style={styles.subtitle}>Ready to transport fresh produce?</Text>
+      </View>
+
+      {/* Header Section */}
+      <Animated.View 
+        style={[
+          styles.header, 
+          { 
+            opacity: fadeAnim,
+            transform: [{ scale: pulseAnim }]
+          }
+        ]}
+      >
+        <View style={styles.logoContainer}>
+          <Logo size={60} />
+        </View>
+        <Text style={styles.brandName}>Mandinext</Text>
+        <Text style={styles.welcomeText}>Welcome Back, Driver!</Text>
+        <View style={styles.statusBadge}>
+          <View style={styles.statusDot} />
+          <Text style={styles.statusText}>Ready for Transport</Text>
+        </View>
       </Animated.View>
 
       {/* Main Content */}
       <View style={styles.content}>
         <Animated.View
           style={[
-            styles.questionContainer,
+            styles.questionSection,
             { 
               opacity: fadeAnim, 
               transform: [{ translateY: slideAnim1 }] 
             }
           ]}
         >
-          <Text style={styles.questionText}>
-            What would you like to do today?
-          </Text>
+          <Text style={styles.questionText}>What's Your Plan Today?</Text>
         </Animated.View>
 
-        {/* Action Buttons */}
-        <View style={styles.buttonsContainer}>
-          {/* New Ride Button */}
+        {/* Action Cards */}
+        <View style={styles.cardsContainer}>
+          {/* New Ride Card */}
           <Animated.View
             style={{
               transform: [
@@ -112,28 +148,32 @@ export default function StartRideScreen({ navigation }: Props) {
             }}
           >
             <TouchableOpacity
-              style={[styles.actionButton, styles.newRideButton]}
+              style={[styles.actionCard, styles.newRideCard]}
               onPress={handleNewRide}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <View style={styles.buttonContent}>
-                <View style={[styles.iconContainer, styles.newRideIcon]}>
-                  <Text style={styles.buttonIcon}>🚛</Text>
+              <View style={styles.cardIconSection}>
+                <View style={styles.newRideIconBg}>
+                  <Text style={styles.cardIcon}>🚛</Text>
                 </View>
-                <View style={styles.buttonTextContainer}>
-                  <Text style={styles.buttonTitle}>Start New Journey</Text>
-                  <Text style={styles.buttonSubtitle}>
-                    Begin fresh agricultural transport
-                  </Text>
+              </View>
+              <View style={styles.cardTextSection}>
+                <Text style={styles.cardTitle}>Start New Journey</Text>
+                <Text style={styles.cardDescription}>
+                  Begin fresh agricultural delivery
+                </Text>
+                <View style={styles.cardFeatures}>
+                  <Text style={styles.featureTag}>• Route Planning</Text>
+                  <Text style={styles.featureTag}>• Live GPS</Text>
                 </View>
-                <View style={styles.arrowContainer}>
-                  <Text style={styles.arrowIcon}>→</Text>
-                </View>
+              </View>
+              <View style={styles.cardArrow}>
+                <Text style={styles.arrowText}>→</Text>
               </View>
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Continue Ride Button */}
+          {/* Continue Ride Card */}
           <Animated.View
             style={{
               transform: [
@@ -143,39 +183,64 @@ export default function StartRideScreen({ navigation }: Props) {
             }}
           >
             <TouchableOpacity
-              style={[styles.actionButton, styles.continueRideButton]}
+              style={[styles.actionCard, styles.continueRideCard]}
               onPress={handleContinueRide}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <View style={styles.buttonContent}>
-                <View style={[styles.iconContainer, styles.continueRideIcon]}>
-                  <Text style={styles.buttonIcon}>▶️</Text>
+              <View style={styles.cardIconSection}>
+                <View style={styles.continueRideIconBg}>
+                  <Text style={styles.cardIcon}>▶️</Text>
                 </View>
-                <View style={styles.buttonTextContainer}>
-                  <Text style={[styles.buttonTitle, styles.continueButtonTitle]}>
-                    Continue Journey
+              </View>
+              <View style={styles.cardTextSection}>
+                <Text style={[styles.cardTitle, styles.continueTitle]}>
+                  Continue Journey
+                </Text>
+                <Text style={[styles.cardDescription, styles.continueDescription]}>
+                  Resume your active delivery
+                </Text>
+                <View style={styles.cardFeatures}>
+                  <Text style={[styles.featureTag, styles.continueFeature]}>
+                    • Track Progress
                   </Text>
-                  <Text style={[styles.buttonSubtitle, styles.continueButtonSubtitle]}>
-                    Resume existing delivery
+                  <Text style={[styles.featureTag, styles.continueFeature]}>
+                    • Update Status
                   </Text>
                 </View>
-                <View style={styles.arrowContainer}>
-                  <Text style={[styles.arrowIcon, styles.darkArrow]}>→</Text>
-                </View>
+              </View>
+              <View style={styles.cardArrow}>
+                <Text style={[styles.arrowText, styles.continueArrow]}>→</Text>
               </View>
             </TouchableOpacity>
           </Animated.View>
         </View>
 
-        {/* Bottom Decorative Elements */}
+        {/* Bottom Info */}
         <Animated.View
           style={[
-            styles.decorativeBottom,
+            styles.bottomInfo,
             { opacity: fadeAnim }
           ]}
         >
-          <View style={styles.farmPatternContainer}>
-            <Text style={styles.farmPattern}>🌾 🚜 🌱 🌾 🚜 🌱</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Today's Weather:</Text>
+            <Text style={styles.infoValue}>Perfect for Transport 🌤️</Text>
+          </View>
+          <View style={styles.trustBadges}>
+            <View style={styles.trustItem}>
+              <Text style={styles.trustNumber}>24/7</Text>
+              <Text style={styles.trustLabel}>Support</Text>
+            </View>
+            <View style={styles.trustDivider} />
+            <View style={styles.trustItem}>
+              <Text style={styles.trustNumber}>Secure</Text>
+              <Text style={styles.trustLabel}>Transport</Text>
+            </View>
+            <View style={styles.trustDivider} />
+            <View style={styles.trustItem}>
+              <Text style={styles.trustNumber}>Real-time</Text>
+              <Text style={styles.trustLabel}>Updates</Text>
+            </View>
           </View>
         </Animated.View>
       </View>
@@ -186,131 +251,267 @@ export default function StartRideScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0F1E2B', // Deep agritech blue-green
   },
+  
+  // Background Pattern
+  backgroundPattern: {
+    position: 'absolute',
+    width: width,
+    height: height,
+  },
+  topCircle: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    top: -100,
+    right: -80,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.15)',
+  },
+  bottomCircle: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    bottom: -50,
+    left: -60,
+    backgroundColor: 'rgba(33, 150, 243, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(33, 150, 243, 0.12)',
+  },
+  fieldLines: {
+    position: 'absolute',
+    width: width,
+    height: height,
+    opacity: 0.03,
+  },
+  fieldLine: {
+    position: 'absolute',
+    width: '100%',
+    height: 1,
+    backgroundColor: '#4CAF50',
+  },
+
+  // Header
   header: {
-    paddingTop: SIZES.padding,
-    paddingHorizontal: SIZES.padding,
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   logoContainer: {
-    marginBottom: 20,
+    width: 80,
+    height: 80,
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
   },
-  welcomeText: {
+  brandName: {
     fontSize: 28,
     fontWeight: '700',
-    color: COLORS.text,
-    textAlign: 'center',
-    marginBottom: 8,
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: 1,
   },
-  subtitle: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    textAlign: 'center',
+  welcomeText: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 16,
     fontWeight: '500',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-  },
-  questionContainer: {
-    marginBottom: 40,
-  },
-  questionText: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-    lineHeight: 30,
-  },
-  buttonsContainer: {
-    gap: 20,
-    marginBottom: 40,
-  },
-  actionButton: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-  },
-  newRideButton: {
-    backgroundColor: COLORS.primary,
-    borderWidth: 2,
-    borderColor: 'rgba(142, 245, 90, 0.3)',
-  },
-  continueRideButton: {
-    backgroundColor: COLORS.white,
-    borderWidth: 2,
-    borderColor: 'rgba(33, 74, 80, 0.1)',
-  },
-  buttonContent: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 24,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.4)',
   },
-  iconContainer: {
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    marginRight: 8,
+  },
+  statusText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Content
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  questionSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  questionText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+
+  // Cards
+  cardsContainer: {
+    gap: 16,
+    marginBottom: 32,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  newRideCard: {
+    backgroundColor: '#4CAF50', // Agritech green
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  continueRideCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Semi-transparent white
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  cardIconSection: {
+    marginRight: 16,
+  },
+  newRideIconBg: {
     width: 60,
     height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
-  newRideIcon: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  continueRideIconBg: {
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  continueRideIcon: {
-    backgroundColor: 'rgba(142, 245, 90, 0.1)',
+  cardIcon: {
+    fontSize: 24,
   },
-  buttonIcon: {
-    fontSize: 28,
-  },
-  buttonTextContainer: {
+  cardTextSection: {
     flex: 1,
   },
-  buttonTitle: {
+  cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.white,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
-  continueButtonTitle: {
-    color: COLORS.text,
+  continueTitle: {
+    color: '#FFFFFF',
   },
-  buttonSubtitle: {
+  cardDescription: {
     fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  continueDescription: {
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  cardFeatures: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  featureTag: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginRight: 12,
     fontWeight: '500',
   },
-  continueButtonSubtitle: {
-    color: COLORS.textLight,
+  continueFeature: {
+    color: 'rgba(255, 255, 255, 0.7)',
   },
-  arrowContainer: {
+  cardArrow: {
     marginLeft: 12,
   },
-  arrowIcon: {
-    fontSize: 20,
-    color: COLORS.white,
+  arrowText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
-  darkArrow: {
-    color: COLORS.text,
+  continueArrow: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
-  decorativeBottom: {
+
+  // Bottom Info
+  bottomInfo: {
     flex: 1,
     justifyContent: 'flex-end',
+    paddingBottom: 32,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
-  farmPatternContainer: {
-    opacity: 0.3,
+  infoLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    fontWeight: '500',
   },
-  farmPattern: {
-    fontSize: 24,
-    letterSpacing: 8,
-    color: COLORS.accent,
+  infoValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  trustBadges: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.25)',
+  },
+  trustItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trustNumber: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4CAF50',
+    marginBottom: 2,
+  },
+  trustLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
+  },
+  trustDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: 12,
   },
 });

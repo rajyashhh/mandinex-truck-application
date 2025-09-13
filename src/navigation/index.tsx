@@ -7,6 +7,8 @@ export type RootStackParamList = {
   Splash: undefined;
   StartRide: undefined;
   Login: { rideType?: 'new' | 'continue' } | undefined;
+  OTPVerification: { phone: string; rideType: 'new' | 'continue' };
+  Dashboard: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -16,6 +18,8 @@ export default function AppNavigation() {
   const SplashScreen = require('../screens/SplashScreen').default;
   const StartRideScreen = require('../screens/StartRideScreen').default;
   const LoginScreen = require('../screens/LoginScreen').default;
+  const OTPVerificationScreen = require('../screens/OtpVerificationScreen').default;
+  const DashboardScreen = require('../screens/DashboardScreen').default;
 
   return (
     <NavigationContainer>
@@ -23,6 +27,8 @@ export default function AppNavigation() {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="StartRide" component={StartRideScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+        <Stack.Screen name="Dashboard" component={DashboardScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
