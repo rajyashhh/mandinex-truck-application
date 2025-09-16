@@ -3,13 +3,14 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+// In src/navigation/index.tsx
 export type RootStackParamList = {
   Splash: undefined;
   StartRide: undefined;
   Login: { rideType?: 'new' | 'continue' } | undefined;
   OTPVerification: { phone: string; rideType: 'new' | 'continue' };
   DriverRegistration: { phone: string };
-  Dashboard: undefined;
+  Dashboard: { driverName?: string; phone?: string; license?: string; permitFile?: any } | undefined; // Updated
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

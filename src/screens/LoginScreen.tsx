@@ -15,6 +15,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Logo from '../components/Logo';
 import { COLORS, SIZES } from '../theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation';
@@ -23,69 +24,41 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 const { width, height } = Dimensions.get('window');
 
-const SLIDER_TEXTS = [
-  "Smart Logistics for Fresh Produce",
-  "Real-Time Agricultural Transport",
-  "Precision Delivery Solutions",
-  "Connecting Farms to Markets",
-  "Sustainable Supply Chain"
-];
-
 export default function LoginScreen({ navigation, route }: Props) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isValidPhone, setIsValidPhone] = useState(false);
-  const [currentSliderIndex, setCurrentSliderIndex] = useState(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
-  const sliderFadeAnim = useRef(new Animated.Value(1)).current;
+  const illustrationAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // ScrollView ref for keyboard handling
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const rideType = route?.params?.rideType || 'new';
 
   useEffect(() => {
     // Entrance animations
-    Animated.parallel([
+    Animated.sequence([
       Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(illustrationAnim, {
         toValue: 1,
         duration: 1000,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 800,
-        delay: 200,
+        duration: 600,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Text slider animation
-    const sliderInterval = setInterval(() => {
-      Animated.sequence([
-        Animated.timing(sliderFadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(sliderFadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      setCurrentSliderIndex((prevIndex) => 
-        prevIndex === SLIDER_TEXTS.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 3000);
-
-    // Pulse animation for decorative elements
+    // Pulse animation for interactive elements
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -101,18 +74,11 @@ export default function LoginScreen({ navigation, route }: Props) {
       ])
     ).start();
 
-    // Keyboard event listeners for better handling
+    // Keyboard event listeners
     const keyboardWillShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
-        // Scroll to form section when keyboard appears
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({
-            y: height * 0.4, // Scroll to form area
-            animated: true,
-          });
-        }, 100);
       }
     );
 
@@ -124,7 +90,6 @@ export default function LoginScreen({ navigation, route }: Props) {
     );
 
     return () => {
-      clearInterval(sliderInterval);
       keyboardWillShowListener.remove();
       keyboardWillHideListener.remove();
     };
@@ -171,16 +136,7 @@ export default function LoginScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            ref={scrollViewRef}
-            contentContainerStyle={[
-              styles.scrollContent,
-              { paddingBottom: Math.max(keyboardHeight, 20) }
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-          >
+          <View style={styles.mainContainer}>
             {/* Background Elements */}
             <View style={styles.backgroundElements}>
               <Animated.View
@@ -200,160 +156,151 @@ export default function LoginScreen({ navigation, route }: Props) {
                   { opacity: fadeAnim }
                 ]}
               />
-              <View style={styles.gridPattern}>
-                {[...Array(6)].map((_, i) => (
-                  <View key={i} style={[styles.gridLine, { top: i * 80 }]} />
-                ))}
-              </View>
             </View>
 
-            {/* Header Section - Reduced padding for keyboard space */}
-            <Animated.View
-              style={[
-                styles.header,
-                { opacity: fadeAnim }
-              ]}
+            {/* Top Content - Illustration and Welcome */}
+            <ScrollView 
+              style={styles.topContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
-              <View style={styles.logoSection}>
-                <View style={styles.logoContainer}>
-                  <Text style={styles.logoIcon}>🚛</Text>
-                </View>
-                <Text style={styles.brandTitle}>Mandinext</Text>
-              </View>
-            </Animated.View>
-
-            {/* Premium Text Slider - Mid Section */}
-            <Animated.View
-              style={[
-                styles.sliderSection,
-                { opacity: fadeAnim }
-              ]}
-            >
-              <Animated.Text
+              {/* Brand Section */}
+              <Animated.View
                 style={[
-                  styles.sliderText,
-                  { opacity: sliderFadeAnim }
+                  styles.brandSection,
+                  { opacity: fadeAnim }
                 ]}
               >
-                {SLIDER_TEXTS[currentSliderIndex]}
-              </Animated.Text>
-              <View style={styles.sliderDots}>
-                {SLIDER_TEXTS.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.dot,
-                      index === currentSliderIndex && styles.activeDot
-                    ]}
-                  />
-                ))}
-              </View>
-            </Animated.View>
+                <Text style={styles.brandName}>MANDINEXT</Text>
+              </Animated.View>
 
-            {/* Login Form - Below Mid */}
+              {/* Main Illustration Section */}
+              <Animated.View
+                style={[
+                  styles.illustrationSection,
+                  { 
+                    opacity: illustrationAnim,
+                    transform: [{ scale: illustrationAnim }]
+                  }
+                ]}
+              >
+                <View style={styles.illustrationContainer}>
+                  {/* Central Truck Driver Character */}
+                  <View style={styles.centralCharacter}>
+                    <View style={styles.driverContainer}>
+                      <Text style={styles.driverEmoji}>👨‍🚛</Text>
+                      <View style={styles.packageContainer}>
+                        <Text style={styles.packageEmoji}>📦</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Surrounding Agricultural Icons */}
+                  <View style={styles.floatingIcons}>
+                    <Animated.View 
+                      style={[
+                        styles.floatingIcon, 
+                        styles.icon1,
+                        { transform: [{ scale: pulseAnim }] }
+                      ]}
+                    >
+                      <Text style={styles.iconEmoji}>🚛</Text>
+                    </Animated.View>
+                    <View style={[styles.floatingIcon, styles.icon2]}>
+                      <Text style={styles.iconEmoji}>🌾</Text>
+                    </View>
+                    <View style={[styles.floatingIcon, styles.icon3]}>
+                      <Text style={styles.iconEmoji}>🚜</Text>
+                    </View>
+                    <View style={[styles.floatingIcon, styles.icon4]}>
+                      <Text style={styles.iconEmoji}>📍</Text>
+                    </View>
+                    <View style={[styles.floatingIcon, styles.icon5]}>
+                      <Text style={styles.iconEmoji}>🌱</Text>
+                    </View>
+                    <View style={[styles.floatingIcon, styles.icon6]}>
+                      <Text style={styles.iconEmoji}>⚡</Text>
+                    </View>
+                  </View>
+                </View>
+              </Animated.View>
+
+              {/* Welcome Section */}
+              <Animated.View
+                style={[
+                  styles.welcomeSection,
+                  { 
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }]
+                  }
+                ]}
+              >
+                <Text style={styles.welcomeTitle}>Welcome 👋</Text>
+                <Text style={styles.welcomeDescription}>
+                  With a valid number, you can access deliveries, and our agricultural logistics services
+                </Text>
+              </Animated.View>
+            </ScrollView>
+
+            {/* Bottom Fixed Input Section - Porter Style */}
             <Animated.View
               style={[
-                styles.formSection,
+                styles.bottomInputSection,
                 {
                   opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }]
+                  transform: [{ translateY: slideAnim }],
+                  paddingBottom: keyboardHeight > 0 ? 10 : 30, // Adjust for keyboard
                 }
               ]}
             >
-              <View style={styles.formCard}>
-                <View style={styles.formHeader}>
-                  <Text style={styles.formTitle}>Enter Mobile Number</Text>
-                  <Text style={styles.formSubtitle}>
-                    We'll send you a verification code via SMS
-                  </Text>
-                </View>
-
-                {/* Mobile Number Input */}
-                <View style={styles.inputSection}>
-                  <Text style={styles.inputLabel}>Mobile Number</Text>
-                  <View style={styles.phoneInputContainer}>
-                    <View style={styles.countryCodeContainer}>
-                      <Text style={styles.countryFlag}>🇮🇳</Text>
-                      <Text style={styles.countryCode}>+91</Text>
-                    </View>
-                    <View style={styles.inputDivider} />
-                    <TextInput
-                      style={styles.phoneInput}
-                      placeholder="98765 43210"
-                      placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                      keyboardType="phone-pad"
-                      maxLength={10}
-                      value={phoneNumber}
-                      onChangeText={(text) => setPhoneNumber(text.replace(/\D/g, ''))}
-                      onFocus={() => {
-                        // Scroll to ensure input is visible when focused
-                        setTimeout(() => {
-                          scrollViewRef.current?.scrollTo({
-                            y: height * 0.35,
-                            animated: true,
-                          });
-                        }, 100);
-                      }}
-                    />
-                    {isValidPhone && (
-                      <View style={styles.validIcon}>
-                        <Text style={styles.checkMark}>✓</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-
-                {/* Send OTP Button */}
-                <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
-                  <TouchableOpacity
-                    style={[
-                      styles.otpButton,
-                      isValidPhone && styles.otpButtonActive
-                    ]}
-                    onPress={handleSendOTP}
-                    disabled={!isValidPhone}
-                    activeOpacity={0.9}
-                  >
-                    <Text style={[
-                      styles.otpButtonText,
-                      isValidPhone && styles.otpButtonTextActive
-                    ]}>
-                      Send OTP
-                    </Text>
-                    {isValidPhone && (
-                      <View style={styles.buttonIconContainer}>
-                        <Text style={styles.buttonIcon}>📱</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </Animated.View>
-
-                {/* Trust Indicators */}
-                <View style={styles.trustSection}>
-                  <View style={styles.trustItem}>
-                    <Text style={styles.trustIcon}>🔒</Text>
-                    <Text style={styles.trustText}>Secure & Private</Text>
-                  </View>
-                  <View style={styles.trustItem}>
-                    <Text style={styles.trustIcon}>⚡</Text>
-                    <Text style={styles.trustText}>Instant Verification</Text>
-                  </View>
+              {/* Mobile Number Input */}
+              <View style={styles.inputContainer}>
+                <TouchableOpacity style={styles.countryCodeSection}>
+                  <Text style={styles.flagEmoji}>🇮🇳</Text>
+                  <Text style={styles.countryCodeText}>+91</Text>
+                  <Text style={styles.dropdownArrow}>⌄</Text>
+                </TouchableOpacity>
+                <View style={styles.numberInputSection}>
+                  <TextInput
+                    style={styles.phoneInput}
+                    placeholder="Mobile Number"
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={phoneNumber}
+                    onChangeText={(text) => setPhoneNumber(text.replace(/\D/g, ''))}
+                  />
                 </View>
               </View>
-            </Animated.View>
 
-            {/* Bottom Section */}
-            <Animated.View
-              style={[
-                styles.bottomSection,
-                { opacity: fadeAnim }
-              ]}
-            >
+              {/* Send OTP Button */}
+              <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+                <TouchableOpacity
+                  style={[
+                    styles.otpButton,
+                    isValidPhone && styles.otpButtonActive
+                  ]}
+                  onPress={handleSendOTP}
+                  disabled={!isValidPhone}
+                  activeOpacity={0.9}
+                >
+                  <Text style={[
+                    styles.otpButtonText,
+                    isValidPhone && styles.otpButtonTextActive
+                  ]}>
+                    {isValidPhone ? 'Send OTP' : 'Login'}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Terms Text */}
               <Text style={styles.termsText}>
-                By continuing, you agree to our Terms & Privacy Policy
+                By clicking on login you agree to the{' '}
+                <Text style={styles.termsLink}>terms of service</Text> and{' '}
+                <Text style={styles.termsLink}>privacy policy</Text>
               </Text>
             </Animated.View>
-          </ScrollView>
+          </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -363,17 +310,16 @@ export default function LoginScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F1E2B', // Deep agritech background
+    backgroundColor: '#0F1E2B', // Your original dark agritech background
   },
   keyboardView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    minHeight: height,
+  mainContainer: {
+    flex: 1,
   },
-  
-  // Background Elements
+
+  // Background Elements - Your original style
   backgroundElements: {
     position: 'absolute',
     width: width,
@@ -401,228 +347,209 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(33, 150, 243, 0.1)',
   },
-  gridPattern: {
-    position: 'absolute',
-    width: width,
-    height: height,
-    opacity: 0.02,
+
+  // Top Content
+  topContent: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
-  gridLine: {
+
+  // Brand Section - Your original colors
+  brandSection: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 20,
+  },
+  brandName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#4CAF50', // Your original green
+    letterSpacing: 2,
+  },
+
+  // Illustration Section - Your original dark theme
+  illustrationSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    minHeight: height * 0.35,
+    justifyContent: 'center',
+  },
+  illustrationContainer: {
+    position: 'relative',
+    width: 280,
+    height: 280,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)', // Your original green tint
+    borderRadius: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centralCharacter: {
+    alignItems: 'center',
+  },
+  driverContainer: {
+    alignItems: 'center',
+    position: 'relative',
+  },
+  driverEmoji: {
+    fontSize: 80,
+    marginBottom: 10,
+  },
+  packageContainer: {
+    backgroundColor: '#4CAF50', // Your original green
+    borderRadius: 12,
+    padding: 8,
+    position: 'absolute',
+    bottom: -5,
+    right: -10,
+  },
+  packageEmoji: {
+    fontSize: 20,
+  },
+
+  // Floating Icons - Your original style
+  floatingIcons: {
     position: 'absolute',
     width: '100%',
-    height: 1,
-    backgroundColor: '#4CAF50',
+    height: '100%',
   },
-
-  // Header (reduced padding for keyboard space)
-  header: {
-    alignItems: 'center',
-    paddingTop: 30,
-    paddingBottom: 15,
-  },
-  logoSection: {
-    alignItems: 'center',
-  },
-  logoContainer: {
-    width: 60,
-    height: 60,
-    backgroundColor: 'rgba(76, 175, 80, 0.15)',
-    borderRadius: 16,
+  floatingIcon: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Your original translucent style
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
     borderWidth: 2,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
+    borderColor: 'rgba(76, 175, 80, 0.2)',
   },
-  logoIcon: {
-    fontSize: 26,
+  icon1: {
+    top: 20,
+    left: 20,
   },
-  brandTitle: {
-    fontSize: 22,
+  icon2: {
+    top: 40,
+    right: 30,
+  },
+  icon3: {
+    bottom: 60,
+    left: 10,
+  },
+  icon4: {
+    bottom: 30,
+    right: 20,
+  },
+  icon5: {
+    top: 100,
+    left: -10,
+  },
+  icon6: {
+    top: 80,
+    right: -5,
+  },
+  iconEmoji: {
+    fontSize: 24,
+  },
+
+  // Welcome Section - Your original colors
+  welcomeSection: {
+    paddingHorizontal: 10,
+    paddingBottom: 30,
+  },
+  welcomeTitle: {
+    fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 1,
+    color: '#FFFFFF', // Your original white
+    marginBottom: 12,
   },
-
-  // Premium Text Slider (Mid Section) - Reduced spacing
-  sliderSection: {
-    alignItems: 'center',
-    paddingVertical: 25,
-    paddingHorizontal: 30,
-    minHeight: 90,
-    justifyContent: 'center',
-  },
-  sliderText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 26,
-    marginBottom: 15,
-    minHeight: 50,
-  },
-  sliderDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    marginHorizontal: 3,
-  },
-  activeDot: {
-    backgroundColor: '#4CAF50',
-    width: 16,
-  },
-
-  // Form Section (Below Mid) - Optimized for keyboard
-  formSection: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  formHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 6,
-  },
-  formSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-
-  // Input Section
-  inputSection: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 10,
-  },
-  phoneInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
-    paddingHorizontal: 14,
-    paddingVertical: 2,
-  },
-  countryCodeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  countryFlag: {
+  welcomeDescription: {
     fontSize: 16,
-    marginRight: 6,
+    color: 'rgba(255, 255, 255, 0.7)', // Your original secondary text
+    lineHeight: 24,
+    fontWeight: '400',
   },
-  countryCode: {
-    fontSize: 15,
+
+  // Bottom Fixed Input Section - Porter structure with your colors
+  bottomInputSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    backgroundColor: '#0F1E2B', // Your original background
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Your original input background
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(76, 175, 80, 0.3)', // Your original border
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  countryCodeSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  flagEmoji: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  countryCodeText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // Your original white text
+    marginRight: 8,
   },
-  inputDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginHorizontal: 12,
+  dropdownArrow: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)', // Your original secondary text
+  },
+  numberInputSection: {
+    flex: 1,
   },
   phoneInput: {
-    flex: 1,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    paddingVertical: 12,
-  },
-  validIcon: {
-    marginLeft: 10,
-  },
-  checkMark: {
-    fontSize: 18,
-    color: '#4CAF50',
+    fontWeight: '500',
+    color: '#FFFFFF', // Your original white text
+    paddingHorizontal: 16,
+    paddingVertical: 18,
   },
 
-  // OTP Button
+  // OTP Button - Your original style
   otpButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 14,
-    borderRadius: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Your original inactive state
+    paddingVertical: 18,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   otpButtonActive: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#4CAF50', // Your original green
     borderColor: '#4CAF50',
   },
   otpButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.5)', // Your original inactive text
   },
   otpButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  buttonIconContainer: {
-    marginLeft: 6,
-  },
-  buttonIcon: {
-    fontSize: 14,
+    color: '#FFFFFF', // Your original active text
   },
 
-  // Trust Section
-  trustSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  trustItem: {
-    alignItems: 'center',
-  },
-  trustIcon: {
-    fontSize: 14,
-    marginBottom: 3,
-  },
-  trustText: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '500',
-  },
-
-  // Bottom Section
-  bottomSection: {
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
+  // Terms Section - Your original style
   termsText: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)', // Your original secondary text
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 18,
+    paddingBottom: 10,
+  },
+  termsLink: {
+    color: '#4CAF50', // Your original green links
+    fontWeight: '600',
   },
 });

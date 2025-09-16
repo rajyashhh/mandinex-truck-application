@@ -194,37 +194,22 @@ setVehiclePermitFile({
     }
   };
 
-  const handleContinue = () => {
+// In DriverRegistrationScreen.tsx - handleContinue function
+const handleContinue = () => {
     if (!isAllFieldsValid) {
       Alert.alert('Incomplete Information', 'Please fill all the required fields correctly');
       return;
     }
-
-    // Button press animation
-    Animated.sequence([
-      Animated.timing(buttonScaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonScaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Save driver information
-    console.log('Saving driver info:', {
+  
+    // Navigate to Dashboard with driver name
+    navigation.navigate('Dashboard', { 
+      driverName: driverName.trim(),
       phone,
-      name: driverName,
       license: licenseNumber,
       permitFile: vehiclePermitFile
     });
-
-    // Navigate to Dashboard
-    navigation.navigate('Dashboard');
   };
+  
 
   // Rest of your component JSX remains the same...
   return (
