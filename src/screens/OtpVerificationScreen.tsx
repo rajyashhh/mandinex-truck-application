@@ -143,16 +143,15 @@ export default function OTPVerificationScreen({ navigation, route }: Props) {
     const otpString = otp.join('');
     console.log('Verifying OTP:', otpString, 'for phone:', phone);
     
-    // Navigate based on ride type
+    // Navigate based on ride type - BOTH GO TO RideStart NOW
     if (rideType === 'new') {
-      // New driver - go to registration screen
+      // New driver - go to registration first, then RideStart
       navigation.navigate('DriverRegistration', { phone });
     } else {
-      // Continuing driver - go directly to dashboard
-      navigation.navigate('Dashboard');
+      // Existing driver - go directly to RideStart for PIN entry
+      navigation.navigate('RideStart');
     }
   };
-  
 
   const handleResendOTP = () => {
     if (!canResend) return;

@@ -1,5 +1,4 @@
-// src/screens/DashboardScreen.tsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,341 +7,273 @@ import {
   Animated,
   Dimensions,
   Alert,
-  ScrollView,
   StatusBar,
-  Linking,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// import your svgs (requires react-native-svg + svg-transformer)
-import TruckIcon from "../assets/icons/truck.png";
-import MotorbikeIcon from "../assets/icons/motorbike.svg";
-import PackerIcon from "../assets/icons/packer.svg";
-import ParcelIcon from "../assets/icons/parcel.svg";
-import FastagIcon from "../assets/icons/fastag.svg";
-import PoliceIcon from "../assets/icons/police.svg";
-import PumpIcon from "../assets/icons/pump.svg";
-import RocketIcon from "../assets/icons/rocket.svg";
-import SOSIcon from "../assets/icons/sos.svg";
+const { width } = Dimensions.get('window');
+const CARD_GAP = 14;
+const CARD_SIZE = (width - CARD_GAP * 3) / 2;
 
-const { width } = Dimensions.get("window");
+const quickServices = [
+  { title: "FASTag", emoji: "🏷️", subtitle: "₹1,250" },
+  { title: "Police Checking", emoji: "👮", subtitle: "2 checkpoints" },
+  { title: "Petrol Pump", emoji: "⛽", subtitle: "₹96.2/L" },
+  { title: "Coming Soon", emoji: "🚀", subtitle: "New" },
+];
 
-export default function DashboardScreen({ route }: any) {
+export default function DriverTrackingScreen({ route }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const sosAnim = useRef(new Animated.Value(1)).current;
   const cardAnimations = useRef(
     Array.from({ length: 4 }, () => new Animated.Value(0))
   ).current;
-
   const driverName = route?.params?.driverName || "Driver";
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-      ]),
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 450, useNativeDriver: true }),
     ]).start();
 
-    const cardAnimationSequence = cardAnimations.map((anim, index) =>
-      Animated.timing(anim, { toValue: 1, duration: 450, delay: index * 120, useNativeDriver: true })
-    );
-    Animated.parallel(cardAnimationSequence).start();
-
-    const sosAnimation = Animated.loop(
+    const cardAnimationsLoop = cardAnimations.map((anim, idx) =>
       Animated.sequence([
-        Animated.timing(sosAnim, { toValue: 1.06, duration: 900, useNativeDriver: true }),
-        Animated.timing(sosAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.delay(idx * 160),
+        Animated.timing(anim, { toValue: 1, duration: 520, useNativeDriver: true }),
       ])
     );
-    sosAnimation.start();
-    return () => sosAnimation.stop();
+
+    Animated.stagger(160, cardAnimationsLoop).start();
+
+    const sosAnimationLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sosAnim, { toValue: 1.1, duration: 950, useNativeDriver: true }),
+        Animated.timing(sosAnim, { toValue: 1, duration: 950, useNativeDriver: true }),
+      ])
+    );
+
+    sosAnimationLoop.start();
+
+    return () => sosAnimationLoop.stop();
   }, []);
 
-  const handleCustomerSupport = () => {
-    Alert.alert("Customer Support", "", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Call Now", onPress: () => Linking.openURL("tel:+919606995351") },
-      {
-        text: "WhatsApp",
-        onPress: () => Linking.openURL("whatsapp://send?phone=+919606995351"),
-      },
-    ]);
-  };
-
-  const services = [
-    {
-      title: "Trucks",
-      Icon: TruckIcon,
-      onPress: () => Alert.alert("Trucks", "Open trucks category"),
-    },
-    {
-      title: "2 Wheeler",
-      Icon: MotorbikeIcon,
-      onPress: () => Alert.alert("2 Wheeler", "Open 2W category"),
-    },
-    {
-      title: "Packers & Movers",
-      Icon: PackerIcon,
-      onPress: () => Alert.alert("Packers & Movers", "Open packers"),
-    },
-    {
-      title: "All India Parcel",
-      Icon: ParcelIcon,
-      onPress: () => Alert.alert("All India Parcel", "Open parcels"),
-    },
-  ];
-
-  const quickServices = [
-    { title: "FASTag", Icon: FastagIcon, badge: "₹1,250" },
-    { title: "Police Checking", Icon: PoliceIcon, badge: "4 nearby" },
-    { title: "Petrol Pump", Icon: PumpIcon, badge: "₹96.2/L" },
-    { title: "Coming Soon", Icon: RocketIcon, badge: "New" },
-  ];
-
-  const handleSOS = () => {
-    Alert.alert("Emergency SOS", "Send alert to Support, Police, and your Fleet Manager?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "ACTIVATE SOS", style: "destructive", onPress: () => Alert.alert("SOS ACTIVATED", "Help is on the way!") },
-    ]);
-  };
+  const handleSOS = () =>
+    Alert.alert(
+      "Emergency SOS",
+      "Send alert to Support, Police, and your Fleet Manager?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "ACTIVATE",
+          style: "destructive",
+          onPress: () => Alert.alert("SOS Activated", "Help alert sent successfully."),
+        },
+      ]
+    );
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={styles.container.backgroundColor} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Banner / Pickup */}
-        <View style={styles.heroBanner}>
-          <View style={styles.heroLeft}>
-            <Text style={styles.heroTitle}>Pick up from</Text>
-            <Text style={styles.heroSubtitle}>RA-478, Milan Nagar, Basani Devi Colony</Text>
-          </View>
-          <TouchableOpacity style={styles.heroAction} activeOpacity={0.8}>
-            <Text style={styles.heroActionText}>▾</Text>
-          </TouchableOpacity>
-        </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#F6FBF3" />
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={['#D4EDC7', '#E8F3E6', '#F6FBF3']}
+        start={[0, 0]}
+        end={[0, 1]}
+        style={styles.gradientBackground}
+      />
 
-        {/* Services grid (big cards with cute illustrations) */}
-        <View style={styles.servicesGrid}>
-          {services.map((s, i) => {
-            const Anim = cardAnimations[i] || new Animated.Value(1);
-            return (
-              <Animated.View
-                key={s.title}
-                style={[
-                  styles.serviceCard,
-                  {
-                    opacity: Anim,
-                    transform: [{ scale: Anim }],
-                  },
-                ]}
-              >
-                <TouchableOpacity style={styles.cardTouchable} onPress={s.onPress} activeOpacity={0.88}>
-                  <View style={styles.cardIllustration}>
-                    {/* SVG icon component */}
-                    <s.Icon width={62} height={62} />
-                  </View>
-                  <Text style={styles.serviceTitle}>{s.title}</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
-        </View>
+      <Animated.View style={[styles.headerWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Text style={styles.greeting}>Namaste, {driverName}</Text>
+      </Animated.View>
 
-        {/* Rewards banner */}
-        <View style={styles.rewardsBanner}>
-          <Text style={styles.rewardsTitle}>Explore Driver Rewards</Text>
-          <Text style={styles.rewardsSubtitle}>Earn 2 coins for every ₹100 spent</Text>
-          <TouchableOpacity style={styles.rewardsButton} activeOpacity={0.9}>
-            <Text style={styles.rewardsButtonText}>→</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quick services (small cards) */}
-        <View style={styles.quickGrid}>
-          {quickServices.map((q) => (
-            <TouchableOpacity
-              key={q.title}
-              style={styles.quickCard}
-              onPress={() => Alert.alert(q.title)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.quickLeft}>
-                <q.Icon width={28} height={28} />
-                <Text style={styles.quickTitle}>{q.title}</Text>
-              </View>
-              <View style={styles.quickBadge}>
-                <Text style={styles.quickBadgeText}>{q.badge}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* SOS circular button */}
-        <View style={styles.sosWrap}>
-          <Animated.View style={{ transform: [{ scale: sosAnim }] }}>
-            <TouchableOpacity style={styles.sosButton} onPress={handleSOS} activeOpacity={0.9}>
-              <SOSIcon width={48} height={48} />
-              <Text style={styles.sosText}>EMERGENCY</Text>
-            </TouchableOpacity>
+      <View style={styles.gridWrap}>
+        {quickServices.map((svc, i) => (
+          <Animated.View
+            key={svc.title}
+            style={[
+              styles.card,
+              {
+                opacity: cardAnimations[i],
+                transform: [{ scale: cardAnimations[i] }],
+              },
+            ]}
+          >
+            <View style={styles.cardIconCircle}>
+              <Text style={styles.cardIcon}>{svc.emoji}</Text>
+            </View>
+            <Text style={styles.cardTitle}>{svc.title}</Text>
+            <Text style={styles.cardSubtitle}>{svc.subtitle}</Text>
           </Animated.View>
+        ))}
+      </View>
+
+      <View style={styles.sosWrap}>
+        <Animated.View style={{ transform: [{ scale: sosAnim }] }}>
+          <TouchableOpacity style={styles.sosButton} activeOpacity={0.9} onPress={handleSOS}>
+            <Text style={styles.sosIcon}>🆘</Text>
+            <Text style={styles.sosText}>EMERGENCY SOS</Text>
+            <Text style={styles.sosDescription}>Tap if you need help</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+
+      <Animated.View style={[styles.announcementCard, {opacity: fadeAnim, transform: [{ translateY: slideAnim }]}]}>
+        <Text style={styles.announcementIcon}>📢</Text>
+        <View style={styles.announcementTextView}>
+          <Text style={styles.announcementTitle}>New Route Added!</Text>
+          <Text style={styles.announcementDescription}>
+            Now track rides on the Mumbai–Delhi sector with live toll alerts.
+          </Text>
         </View>
+      </Animated.View>
 
-        {/* Announcements */}
-        <View style={styles.announcementsSection}>
-          <View style={styles.announcementsHeader}>
-            <Text style={styles.announcementsTitle}>Announcements</Text>
-            <TouchableOpacity onPress={() => Alert.alert("View all")}>
-              <Text style={styles.viewAllText}>View all</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.announcementCard}>
-            <View style={styles.announcementLeft}>
-              <TruckIcon width={34} height={34} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.announcementHeader}>Introducing Loading-Unloading Service!</Text>
-              <Text style={styles.announcementText}>Book helpers for loading/unloading at pickup or delivery.</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
+      <View style={{ height: 20 }} />
     </SafeAreaView>
   );
 }
 
-const CARD = {
-  borderRadius: 14,
-  backgroundColor: "#FFFFFF",
-};
+const CARD_WIDTH = (width - CARD_GAP * 3) / 2;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F6F8FB",
+    backgroundColor: "#F6FBF3",
   },
-  scrollContent: {
-    paddingBottom: 36,
+  gradientBackground: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
-
-  heroBanner: {
-    marginHorizontal: 16,
-    marginTop: 18,
-    backgroundColor: "#0C3F9A",
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    elevation: 2,
-    shadowColor: "#0C3F9A44",
+  headerWrap: {
+    marginTop: 36,
+    marginBottom: 22,
+    marginHorizontal: 22,
+    zIndex: 1,
   },
-  heroLeft: { flex: 1 },
-  heroTitle: { color: "#EAF4FF", fontWeight: "700", fontSize: 14 },
-  heroSubtitle: { color: "#D6E8FF", marginTop: 4, fontSize: 13, width: width * 0.6 },
-  heroAction: {
-    backgroundColor: "#ffffff22",
-    padding: 8,
-    borderRadius: 10,
+  greeting: {
+    fontSize: 29,
+    fontWeight: "bold",
+    color: "#1D4428",
+    letterSpacing: 0.3,
   },
-  heroActionText: { color: "#fff", fontSize: 18 },
-
-  servicesGrid: {
+  gridWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginHorizontal: 12,
-    marginTop: 14,
-  },
-  serviceCard: {
-    ...CARD,
-    width: (width - 44) / 2,
-    padding: 12,
+    marginHorizontal: CARD_GAP,
     marginBottom: 14,
-    shadowColor: "#00000010",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 4,
-    alignItems: "flex-start",
+    zIndex: 1,
   },
-  cardTouchable: { width: "100%" },
-  cardIllustration: {
-    width: "100%",
+  card: {
+    width: CARD_WIDTH,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    backgroundColor: "#F4FAFF",
-    borderRadius: 12,
-    marginBottom: 10,
+    marginBottom: CARD_GAP,
+    paddingTop: 14,
+    paddingBottom: 15,
+    elevation: 8,
+    shadowColor: "#ECF8E469",
+    shadowOpacity: 0.14,
+    shadowRadius: 23,
+    shadowOffset: { width: 0, height: 10 },
   },
-  serviceTitle: { fontWeight: "700", fontSize: 15, color: "#1E293B", textAlign: "center" },
-
-  rewardsBanner: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    backgroundColor: "#5B2DBD",
+  cardIconCircle: {
+    backgroundColor: "#ECF8E4",
+    width: 48,
+    height: 48,
     borderRadius: 14,
-    padding: 14,
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    overflow: "hidden",
+    justifyContent: "center",
+    marginBottom: 9,
   },
-  rewardsTitle: { color: "#FFF", fontWeight: "800", fontSize: 16 },
-  rewardsSubtitle: { color: "#F0E8FF", fontSize: 13, opacity: 0.95 },
-  rewardsButton: {
-    backgroundColor: "#FFFFFF22",
-    padding: 8,
-    borderRadius: 10,
+  cardIcon: { fontSize: 28 },
+  cardTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+    marginBottom: 4,
+    color: "#234C2E",
+    textAlign: "center",
+    letterSpacing: 0.3,
   },
-  rewardsButtonText: { color: "#fff", fontSize: 18 },
-
-  quickGrid: {
-    marginHorizontal: 16,
-    marginTop: 12,
+  cardSubtitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#479267",
+    textAlign: "center",
+    marginTop: 1,
+    letterSpacing: 0.2,
   },
-  quickCard: {
-    ...CARD,
-    flexDirection: "row",
+  sosWrap: {
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 12,
-    marginBottom: 10,
-    borderColor: "#EEF1F5",
-    borderWidth: 1,
+    marginTop: 20,
+    marginBottom: 36,
+    zIndex: 1,
   },
-  quickLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  quickTitle: { fontWeight: "700", color: "#1E293B", marginLeft: 12 },
-  quickBadge: { minWidth: 66, alignItems: "center", justifyContent: "center", paddingVertical: 4, paddingHorizontal: 8, borderRadius: 12, backgroundColor: "#E9F7EF" },
-  quickBadgeText: { color: "#1E293B", fontWeight: "700", fontSize: 12 },
-
-  sosWrap: { alignItems: "center", marginVertical: 20 },
   sosButton: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "#FF3B30",
+    backgroundColor: "#E23232",
+    width: 190,
+    height: 190,
+    borderRadius: 95,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#FF3B30",
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 14,
+    shadowColor: "#FF7070",
+    shadowOpacity: 0.35,
+    shadowRadius: 48,
+    shadowOffset: { width: 0, height: 17 },
+    elevation: 20,
   },
-  sosText: { color: "#fff", marginTop: 8, fontWeight: "800", letterSpacing: 0.6 },
-
-  announcementsSection: { marginTop: 6, paddingHorizontal: 16 },
-  announcementsHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  announcementsTitle: { fontSize: 17, fontWeight: "800", color: "#1E293B" },
-  viewAllText: { color: "#5B2DBD", fontWeight: "700" },
-  announcementCard: { ...CARD, flexDirection: "row", alignItems: "center", padding: 12, borderColor: "#EEF1F5", borderWidth: 1 },
-  announcementLeft: { width: 48, height: 48, borderRadius: 8, alignItems: "center", justifyContent: "center", marginRight: 8, backgroundColor: "#F4FAFF" },
-  announcementHeader: { fontWeight: "700", color: "#1E293B", fontSize: 14 },
-  announcementText: { color: "#606770", fontSize: 13 },
+  sosIcon: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  sosText: {
+    fontWeight: "bold",
+    fontSize: 21,
+    color: "#FFF",
+    letterSpacing: 0.2,
+  },
+  sosDescription: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFF",
+    marginTop: 3,
+    letterSpacing: 0.2,
+  },
+  announcementCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 22,
+    marginHorizontal: 18,
+    paddingHorizontal: 23,
+    paddingVertical: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#D0F4C1",
+    shadowRadius: 23,
+    shadowOpacity: 0.46,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+    marginBottom: 28,
+    zIndex: 1,
+  },
+  announcementIcon: {
+    fontSize: 48,
+    marginRight: 18,
+  },
+  announcementTitle: {
+    fontWeight: "bold",
+    fontSize: 19,
+    color: "#2A5F25",
+    letterSpacing: 0.15,
+  },
+  announcementDescription: {
+    fontSize: 16,
+    color: "#4C7641",
+    marginTop: 5,
+    lineHeight: 20,
+  },
+  announcementTextView: {
+    flex: 1,
+  },
 });

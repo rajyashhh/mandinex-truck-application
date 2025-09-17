@@ -16,7 +16,8 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker'; // Use expo-image-picker
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Logo from '../components/Logo';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation';
@@ -158,7 +159,7 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
       });
   
       if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0]; // ✅ FIX: Add [0] to get the first asset
+        const asset = result.assets[0];
         setVehiclePermitFile({
           uri: asset.uri,
           name: `permit_${Date.now()}.jpg`,
@@ -182,11 +183,11 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-setVehiclePermitFile({
-  uri: asset.uri,
-  name: asset.fileName || `permit_${Date.now()}.jpg`,
-  type: 'image/jpeg',
-});
+        setVehiclePermitFile({
+          uri: asset.uri,
+          name: asset.fileName || `permit_${Date.now()}.jpg`,
+          type: 'image/jpeg',
+        });
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to open gallery. Please try again.');
@@ -194,27 +195,51 @@ setVehiclePermitFile({
     }
   };
 
-// In DriverRegistrationScreen.tsx - handleContinue function
-const handleContinue = () => {
+  // Updated handleContinue with AsyncStorage
+  const handleContinue = async () => {
     if (!isAllFieldsValid) {
       Alert.alert('Incomplete Information', 'Please fill all the required fields correctly');
       return;
     }
-  
-    // Navigate to Dashboard with driver name
-    navigation.navigate('Dashboard', { 
-      driverName: driverName.trim(),
-      phone,
-      license: licenseNumber,
-      permitFile: vehiclePermitFile
-    });
+
+    try {
+      // Create driver details object
+      const driverDetails = {
+        driverName: driverName.trim(),
+        phone: phone,
+        license: licenseNumber.trim(),
+        permitFile: vehiclePermitFile,
+        registrationDate: new Date().toISOString(),
+      };
+
+      // Store driver details in AsyncStorage
+      await AsyncStorage.setItem('driverDetails', JSON.stringify(driverDetails));
+      
+      console.log('Driver details saved:', driverDetails);
+
+      Alert.alert(
+        "Registration Successful!",
+        "Welcome to Mandinext. Now enter your ride PIN to start your journey.",
+        [
+          {
+            text: "Continue",
+            onPress: () => {
+              // Navigate to RideStart for PIN entry
+              navigation.navigate('RideStart');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error saving driver details:', error);
+      Alert.alert('Registration Error', 'Failed to save registration details. Please try again.');
+    }
   };
-  
 
   // Rest of your component JSX remains the same...
   return (
     <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
+      <KeyboardAvoidingView 
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
@@ -485,13 +510,7 @@ const handleContinue = () => {
   );
 }
 
-// Your existing styles remain the same...
-
-
-
-
-
-
+// Your existing styles remain exactly the same...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
