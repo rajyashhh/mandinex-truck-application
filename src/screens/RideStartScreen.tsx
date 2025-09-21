@@ -17,8 +17,16 @@ import * as Location from "expo-location";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import LocationService from '../services/LocationService';
 
 const { width } = Dimensions.get("window");
+
+interface DriverDetails {
+  driverName: string;
+  phone: string;
+  license: string;
+  permitFile: string | null;
+}
 
 export default function RideStartScreen({ navigation, route }: any) {
   const [pin, setPin] = useState("");
@@ -40,7 +48,7 @@ export default function RideStartScreen({ navigation, route }: any) {
       try {
         // Get driver details from AsyncStorage
         const savedDriverDetails = await AsyncStorage.getItem('driverDetails');
-        let driverDetails = {};
+        let driverDetails: DriverDetails;
         
         if (savedDriverDetails) {
           driverDetails = JSON.parse(savedDriverDetails);
@@ -55,30 +63,41 @@ export default function RideStartScreen({ navigation, route }: any) {
           };
         }
 
-        // Get current location
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setLoading(false);
-          Alert.alert("Location Permission Not Granted", "Cannot start ride without location access.");
-          return;
-        }
+        // Start background location tracking
+        const locationService = LocationService.getInstance();
+        // Use the PIN as tripId since it's stored as mandi_buyer_pin in the database
+        const tripId = pin.trim();
         
-        const location = await Location.getCurrentPositionAsync({});
-        console.log('Location captured:', location.coords);
+        try {
+          await locationService.startLocationTracking(
+            tripId,
+            driverDetails.phone,
+            pin.trim()
+          );
+          
+          console.log('Background location tracking started');
+        } catch (locationError) {
+          console.error('Location tracking error:', locationError);
+          Alert.alert(
+            "Location Tracking",
+            "Location tracking started with limited permissions. For best experience, please enable 'Always Allow' location access.",
+            [{ text: "OK" }]
+          );
+        }
 
         setLoading(false);
 
-        // Navigate to Dashboard with all driver details and location
+        // Navigate to Dashboard with all driver details
         navigation.replace("Dashboard", {
           ...driverDetails, // Spread saved driver details
           ridePin: pin.trim(),
-          startLocation: location.coords,
+          tripId: tripId,
         });
 
       } catch (error) {
-        console.error('Error retrieving driver details:', error);
+        console.error('Error starting trip:', error);
         setLoading(false);
-        Alert.alert("Error", "Failed to retrieve driver information. Please try again.");
+        Alert.alert("Error", "Failed to start trip. Please try again.");
       }
     } else {
       setLoading(false);
