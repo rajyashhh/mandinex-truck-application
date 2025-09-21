@@ -8,7 +8,7 @@ export type RootStackParamList = {
   StartRide: undefined;
   RideStart: undefined;
   Login: { rideType?: 'new' | 'continue' } | undefined;
-  OTPVerification: { phone: string; rideType: 'new' | 'continue' };
+  OTPVerification: { phone: string; rideType: 'new' | 'continue'; driverId?: number };
   DriverRegistration: { phone: string };
   Dashboard: { 
     driverName?: string; 

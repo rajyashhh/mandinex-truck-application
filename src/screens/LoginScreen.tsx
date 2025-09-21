@@ -101,7 +101,7 @@ export default function LoginScreen({ navigation, route }: Props) {
     setIsValidPhone(isValid);
   }, [phoneNumber]);
 
-  const handleSendOTP = () => {
+  const handleSendOTP = async () => {
     if (!isValidPhone) {
       Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number');
       return;
@@ -121,11 +121,38 @@ export default function LoginScreen({ navigation, route }: Props) {
       }),
     ]).start();
 
-    // Navigate to OTP screen
-    navigation.navigate('OTPVerification', { 
-      phone: '+91' + phoneNumber,
-      rideType: rideType 
-    });
+    try {
+      // Call our own API to save phone number
+      // Using your computer's IP address for mobile testing
+      const API_URL = __DEV__ 
+        ? 'http://192.168.43.20:3001/api/send-otp'
+        : 'https://your-production-api.com/api/send-otp';
+      
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Navigate to OTP screen with driver ID
+        navigation.navigate('OTPVerification', { 
+          phone: '+91' + phoneNumber,
+          rideType: rideType,
+          driverId: data.driverId
+        });
+      } else {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to send OTP. Please try again.');
+    }
   };
 
   return (

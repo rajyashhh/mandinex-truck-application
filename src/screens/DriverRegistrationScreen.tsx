@@ -131,12 +131,14 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
     // Validate all fields
     const nameValid = driverName.trim().length >= 2;
     const licenseValid = licenseNumber.trim().length >= 8;
-    const permitValid = vehiclePermitFile !== null;
+    // Make permit optional for now
+    // const permitValid = vehiclePermitFile !== null;
     
-    setIsAllFieldsValid(nameValid && licenseValid && permitValid);
+    setIsAllFieldsValid(nameValid && licenseValid); // Remove permit requirement
   }, [driverName, licenseNumber, vehiclePermitFile]);
 
   const selectVehiclePermitImage = () => {
+    console.log('Vehicle permit upload clicked');
     Alert.alert(
       'Upload Vehicle Permit',
       'Choose how you want to upload your vehicle permit document',
@@ -151,6 +153,18 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
 
   const openCamera = async () => {
     try {
+      // Request camera permission
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow camera access to take photos for vehicle permit.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -174,6 +188,18 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
   
   const openGallery = async () => {
     try {
+      // Request media library permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow gallery access to select photos for vehicle permit.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -195,7 +221,7 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
     }
   };
 
-  // Updated handleContinue with AsyncStorage
+  // Updated handleContinue with AsyncStorage and database update
   const handleContinue = async () => {
     if (!isAllFieldsValid) {
       Alert.alert('Incomplete Information', 'Please fill all the required fields correctly');
@@ -203,6 +229,29 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
     }
 
     try {
+      // Update driver information in database
+      const API_URL = __DEV__ 
+        ? 'http://192.168.43.20:3001/api/update-driver'
+        : 'https://your-production-api.com/api/update-driver';
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phone.replace('+91', ''), // Remove country code
+          driverName: driverName.trim(),
+          licenseNumber: licenseNumber.trim(),
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update driver information');
+      }
+
       // Create driver details object
       const driverDetails = {
         driverName: driverName.trim(),
@@ -216,6 +265,7 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
       await AsyncStorage.setItem('driverDetails', JSON.stringify(driverDetails));
       
       console.log('Driver details saved:', driverDetails);
+      console.log('Database updated:', data);
 
       Alert.alert(
         "Registration Successful!",
