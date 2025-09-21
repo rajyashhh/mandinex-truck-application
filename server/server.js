@@ -87,13 +87,16 @@ app.post('/api/start-trip', async (req, res) => {
   }
 
   try {
+    // Normalize phone number - remove country code if present
+    const normalizedPhone = driverPhone.replace(/^\+91/, '');
+    
     // Generate unique trip ID
-    const tripId = `TRIP_${Date.now()}_${driverPhone}`;
+    const tripId = `TRIP_${Date.now()}_${normalizedPhone}`;
 
-    // Get driver ID
+    // Get driver ID - try both formats
     const driverResult = await pool.query(
-      'SELECT id FROM drivers WHERE driver_phone = $1',
-      [driverPhone]
+      'SELECT id FROM drivers WHERE driver_phone = $1 OR driver_phone = $2',
+      [normalizedPhone, driverPhone]
     );
 
     if (driverResult.rows.length === 0) {
@@ -107,7 +110,7 @@ app.post('/api/start-trip', async (req, res) => {
       `INSERT INTO trips (driver_id, driver_phone, mandi_buyer_pin, trip_start_time, status)
        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, 'active')
        RETURNING id`,
-      [driverId, driverPhone, ridePin]
+      [driverId, normalizedPhone, ridePin]  // Use normalized phone
     );
     
     const actualTripId = tripResult.rows[0].id;
@@ -123,7 +126,7 @@ app.post('/api/start-trip', async (req, res) => {
          trip_id = EXCLUDED.trip_id,
          trip_active = true,
          last_updated = CURRENT_TIMESTAMP`,
-      [driverId, driverPhone, latitude, longitude, ridePin]  // Store ridePin as trip_id
+      [driverId, normalizedPhone, latitude, longitude, ridePin]  // Store ridePin as trip_id with normalized phone
     );
 
     res.json({ 
@@ -157,10 +160,17 @@ app.post('/api/update-location', async (req, res) => {
   }
 
   try {
-    // Get driver ID and trip info
+    // Normalize phone number
+    const normalizedPhone = driverPhone.replace(/^\+91/, '');
+    
+    // Get driver ID and trip info - try both phone formats
     const tripResult = await pool.query(
-      'SELECT driver_id, trip_start_time FROM trips WHERE mandi_buyer_pin = $1 AND driver_phone = $2 AND status = \'active\'',
-      [tripId, driverPhone]
+      `SELECT driver_id, trip_start_time 
+       FROM trips 
+       WHERE mandi_buyer_pin = $1 
+       AND (driver_phone = $2 OR driver_phone = $3)
+       AND status = 'active'`,
+      [tripId, normalizedPhone, driverPhone]
     );
 
     if (tripResult.rows.length === 0) {
