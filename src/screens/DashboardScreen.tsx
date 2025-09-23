@@ -1,5 +1,5 @@
 // src/screens/PorterDriverScreen.tsx
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,13 @@ import {
   Platform,
   SafeAreaView,
   ImageBackground,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import LocationService from '../services/LocationService';
+import { LocationDebugger } from '../utils/locationDebug';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_CONFIG } from '../config/api';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +35,63 @@ export default function PorterDriverScreen({ route }: any) {
   const wave3Anim = useRef(new Animated.Value(1)).current;
 
   const driverName = route?.params?.driverName || "Driver";
+  const driverPhone = route?.params?.phone || route?.params?.driverPhone || "Unknown";
+  const tripId = route?.params?.tripId || route?.params?.ridePin || "No Trip";
+  
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<any[]>([]);
+  const [locationStatus, setLocationStatus] = useState('Checking...');
+
+  useEffect(() => {
+    // Check location tracking status
+    checkLocationStatus();
+    
+    // Set up periodic status check
+    const statusInterval = setInterval(checkLocationStatus, 5000);
+    
+    return () => clearInterval(statusInterval);
+  }, []);
+  
+  const checkLocationStatus = async () => {
+    try {
+      const activeTripStr = await AsyncStorage.getItem('active_trip');
+      if (activeTripStr) {
+        const activeTrip = JSON.parse(activeTripStr);
+        setLocationStatus(`Tracking Active - Trip: ${activeTrip.tripId}`);
+      } else {
+        setLocationStatus('No Active Trip');
+      }
+    } catch (error) {
+      setLocationStatus('Error checking status');
+    }
+  };
+  
+  const loadDebugLogs = async () => {
+    const logs = await LocationDebugger.getLogs();
+    setDebugLogs(logs.slice(-20).reverse()); // Show last 20 logs, newest first
+  };
+  
+  const testLocationUpdate = async () => {
+    Alert.alert(
+      'Test Location Update',
+      'This will send a test location update to the server.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Test',
+          onPress: async () => {
+            const result = await LocationDebugger.testLocationUpdate(driverPhone, tripId);
+            if (result.success) {
+              Alert.alert('Success', 'Test location update sent successfully');
+            } else {
+              Alert.alert('Error', 'Failed to send test location update');
+            }
+            loadDebugLogs();
+          }
+        }
+      ]
+    );
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -517,6 +579,114 @@ const showEmergencyContacts = () => {
           </TouchableOpacity>
         </LinearGradient>
       </View>
+      
+      {/* Debug Button */}
+      <TouchableOpacity 
+        style={{
+          position: 'absolute',
+          bottom: 100,
+          right: 20,
+          backgroundColor: '#ef4444',
+          padding: 15,
+          borderRadius: 30,
+          zIndex: 200,
+        }}
+        onPress={() => {
+          setShowDebug(true);
+          loadDebugLogs();
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: 'bold' }}>🐛 Debug</Text>
+      </TouchableOpacity>
+
+      {/* Debug Modal */}
+      <Modal
+        visible={showDebug}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDebug(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'flex-end',
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: 20,
+            maxHeight: '80%',
+          }}>
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 20,
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Location Debug</Text>
+              <TouchableOpacity onPress={() => setShowDebug(false)}>
+                <Text style={{ fontSize: 24 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Status: {locationStatus}</Text>
+              <Text>Driver Phone: {driverPhone}</Text>
+              <Text>Trip ID: {tripId}</Text>
+              <Text>API URL: {API_CONFIG.BASE_URL}</Text>
+            </View>
+            
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#3b82f6',
+                  padding: 10,
+                  borderRadius: 5,
+                  flex: 1,
+                }}
+                onPress={testLocationUpdate}
+              >
+                <Text style={{ color: 'white', textAlign: 'center' }}>Test Location Update</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#10b981',
+                  padding: 10,
+                  borderRadius: 5,
+                  flex: 1,
+                }}
+                onPress={loadDebugLogs}
+              >
+                <Text style={{ color: 'white', textAlign: 'center' }}>Refresh Logs</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={{ maxHeight: 400 }}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Recent Logs:</Text>
+              {debugLogs.map((log, index) => (
+                <View key={index} style={{
+                  backgroundColor: '#f3f4f6',
+                  padding: 10,
+                  marginBottom: 5,
+                  borderRadius: 5,
+                }}>
+                  <Text style={{ fontSize: 12, color: '#6b7280' }}>
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </Text>
+                  <Text style={{ fontWeight: 'bold', marginTop: 2 }}>{log.message}</Text>
+                  {log.data && (
+                    <Text style={{ fontSize: 12, color: '#374151', marginTop: 2 }}>
+                      {JSON.stringify(log.data, null, 2)}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

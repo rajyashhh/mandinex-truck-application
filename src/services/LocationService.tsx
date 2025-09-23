@@ -2,9 +2,11 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, AppStateStatus, Platform, Alert } from 'react-native';
+import { API_CONFIG } from '../config/api';
+import { LocationDebugger } from '../utils/locationDebug';
 
 const LOCATION_TASK_NAME = 'background-location-task';
-const API_BASE_URL = 'https://mandinex-truck-application.onrender.com'; // Update with your server URL
+const API_BASE_URL = API_CONFIG.BASE_URL;
 const LOCATION_UPDATE_INTERVAL = 30000; // Update every 30 seconds
 const MIN_DISTANCE_UPDATE = 20; // Update if moved more than 20 meters
 
@@ -74,7 +76,18 @@ class LocationService {
       await AsyncStorage.setItem('active_trip', JSON.stringify(this.tripData));
 
       // Call start trip API
-      await fetch(`${API_BASE_URL}/api/start-trip`, {
+      await LocationDebugger.log('Starting trip', {
+        tripId,
+        driverPhone,
+        ridePin,
+        location: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+        apiUrl: `${API_BASE_URL}/api/start-trip`
+      });
+      
+      const startTripResponse = await fetch(`${API_BASE_URL}/api/start-trip`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -83,6 +96,12 @@ class LocationService {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         }),
+      });
+      
+      const startTripResult = await startTripResponse.json();
+      await LocationDebugger.log('Start trip response', {
+        status: startTripResponse.status,
+        result: startTripResult
       });
 
       // Start background location updates
@@ -98,8 +117,13 @@ class LocationService {
         },
       });
 
+      await LocationDebugger.log('Location tracking started successfully');
       console.log('Location tracking started');
-    } catch (error) {
+    } catch (error: any) {
+      await LocationDebugger.log('Error starting location tracking', {
+        error: error.message,
+        stack: error.stack
+      });
       console.error('Error starting location tracking:', error);
       throw error;
     }
@@ -146,26 +170,49 @@ class LocationService {
       const batteryLevel = await this.getBatteryLevel();
       const networkType = await this.getNetworkType();
 
+      const updateData = {
+        tripId: tripData.tripId,
+        driverPhone: tripData.driverPhone,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        speed: location.speed,
+        heading: location.heading,
+        altitude: location.altitude,
+        accuracy: location.accuracy,
+        batteryLevel,
+        networkType,
+      };
+      
+      await LocationDebugger.log('Sending location update', {
+        updateData,
+        apiUrl: `${API_BASE_URL}/api/update-location`
+      });
+      
       const response = await fetch(`${API_BASE_URL}/api/update-location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tripId: tripData.tripId,
-          driverPhone: tripData.driverPhone,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          speed: location.speed,
-          heading: location.heading,
-          altitude: location.altitude,
-          accuracy: location.accuracy,
-          batteryLevel,
-          networkType,
-        }),
+        body: JSON.stringify(updateData),
       });
 
-      const result = await response.json();
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        result = { rawResponse: responseText };
+      }
+      
+      await LocationDebugger.log('Location update result', {
+        status: response.status,
+        result
+      });
       console.log('Location update result:', result);
-    } catch (error) {
+    } catch (error: any) {
+      await LocationDebugger.log('Error sending location update', {
+        error: error.message,
+        stack: error.stack,
+        location
+      });
       console.error('Error sending location update:', error);
       // Store failed updates for retry
       await this.storeFailedUpdate(location);

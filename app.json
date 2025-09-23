@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "truck-driver-application",
+    "name": "Mandinex Driver",
     "slug": "truck-driver-application",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,7 +24,11 @@
               "NSExceptionAllowsInsecureHTTPLoads": true
             }
           }
-        }
+        },
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Mandinex needs to track your location during trips for driver and cargo safety.",
+        "NSLocationWhenInUseUsageDescription": "Mandinex needs to access your location to show your current position.",
+        "NSLocationAlwaysUsageDescription": "Mandinex needs to track your location in the background during active trips.",
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
@@ -34,7 +38,12 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.rajyashhh.mandiplus"
+      "package": "com.rajyashhh.mandiplus",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -58,6 +67,17 @@
             "flipper": true
           }
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Mandinex to access your location for trip tracking and driver safety.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-task-manager"
       ]
     ],
     "extra": {
