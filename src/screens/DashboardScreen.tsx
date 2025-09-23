@@ -159,19 +159,72 @@ export default function PorterDriverScreen({ route }: any) {
     );
   };
 
-  const handleSOS = () =>
-    Alert.alert(
-      "Emergency SOS",
-      "Send alert to Support, Police, and your Fleet Manager?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "ACTIVATE",
-          style: "destructive",
-          onPress: () => Alert.alert("SOS Activated", "Help alert sent successfully."),
-        },
-      ]
-    );
+  const emergencyContacts = [
+    { name: "Emergency Services", number: "112" },
+    { name: "Police", number: "100" },
+    { name: "Ambulance", number: "102" },
+    { name: "Mandinext Support", number: "+919606995351" }, // Replace with actual number
+    { name: "Fleet Manager", number: "+919606995351" }   // Replace with actual number
+  ];
+  
+
+const handleSOS = () => {
+  Alert.alert(
+    "🚨 EMERGENCY SOS",
+    "Choose emergency action:",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Call Emergency (112)",
+        style: "destructive", 
+        onPress: () => makeCall("112")
+      },
+      {
+        text: "Call Fleet Manager",
+        onPress: () => makeCall(emergencyContacts[4].number)
+      },
+      {
+        text: "Show All Contacts",
+        onPress: () => showEmergencyContacts()
+      }
+    ]
+  );
+};
+
+const makeCall = async (phoneNumber: string) => {
+  try {
+    let phoneUrl = '';
+    
+    // Use different URL schemes for different platforms
+    if (Platform.OS === 'android') {
+      phoneUrl = `tel:${phoneNumber}`;
+    } else {
+      phoneUrl = `telprompt:${phoneNumber}`; // iOS shows confirmation dialog
+    }
+
+    const canOpen = await Linking.canOpenURL(phoneUrl);
+    if (canOpen) {
+      await Linking.openURL(phoneUrl);
+    } else {
+      Alert.alert("Error", "Cannot make phone calls on this device");
+    }
+  } catch (error) {
+    console.error("Call failed:", error);
+    Alert.alert("Error", "Failed to make call. Please dial manually.");
+  }
+};
+
+const showEmergencyContacts = () => {
+  const contactOptions = emergencyContacts.map(contact => ({
+    text: `${contact.name} (${contact.number})`,
+    onPress: () => makeCall(contact.number)
+  }));
+  
+  contactOptions.push({ text: "Cancel", style: "cancel" });
+  
+  Alert.alert("Emergency Contacts", "Choose contact to call:", contactOptions);
+};
+
 
   const waveAnimatedStyle = (anim: Animated.Value, size: number) => ({
     width: size,
