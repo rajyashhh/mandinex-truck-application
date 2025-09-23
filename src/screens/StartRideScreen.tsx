@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  StatusBar,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SIZES } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import Logo from '../components/Logo';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation';
@@ -19,65 +21,13 @@ const { width, height } = Dimensions.get('window');
 
 export default function StartRideScreen({ navigation }: Props) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim1 = useRef(new Animated.Value(50)).current;
-  const slideAnim2 = useRef(new Animated.Value(50)).current;
-  const scaleAnim1 = useRef(new Animated.Value(0.95)).current;
-  const scaleAnim2 = useRef(new Animated.Value(0.95)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    // Smooth entrance animations
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.stagger(200, [
-        Animated.parallel([
-          Animated.timing(slideAnim1, {
-            toValue: 0,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim1, {
-            toValue: 1,
-            tension: 80,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(slideAnim2, {
-            toValue: 0,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim2, {
-            toValue: 1,
-            tension: 80,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
     ]).start();
-
-    // Subtle pulse for logo
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   }, []);
 
   const handleNewRide = () => {
@@ -89,161 +39,160 @@ export default function StartRideScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Agritech Background Pattern */}
-      <View style={styles.backgroundPattern}>
-        <View style={styles.topCircle} />
-        <View style={styles.bottomCircle} />
-        <View style={styles.fieldLines}>
-          {[...Array(8)].map((_, i) => (
-            <View key={i} style={[styles.fieldLine, { top: i * 60 }]} />
-          ))}
-        </View>
-      </View>
-
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a3d72" />
+      
       {/* Header Section */}
-      <Animated.View 
-        style={[
-          styles.header, 
-          { 
-            opacity: fadeAnim,
-            transform: [{ scale: pulseAnim }]
-          }
-        ]}
-      >
-        <View style={styles.logoContainer}>
-          <Logo size={60} />
-        </View>
-        <Text style={styles.brandName}>Mandinext</Text>
-        <Text style={styles.welcomeText}>Welcome Back, Driver!</Text>
-        <View style={styles.statusBadge}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Ready for Transport</Text>
-        </View>
-      </Animated.View>
-
-      {/* Main Content */}
-      <View style={styles.content}>
-        <Animated.View
+      <View style={styles.headerSection}>
+        <LinearGradient
+          colors={['#1a3d72', '#2a5090', '#3a6bb0']}
+          style={styles.headerGradient}
+        />
+        
+        <Animated.View 
           style={[
-            styles.questionSection,
-            { 
-              opacity: fadeAnim, 
-              transform: [{ translateY: slideAnim1 }] 
-            }
+            styles.headerContent,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
           ]}
         >
-          <Text style={styles.questionText}>What's Your Plan Today?</Text>
+          <View style={styles.logoWrapper}>
+            <View style={styles.logoContainer}>
+              <Logo size={42} />
+            </View>
+          </View>
+          
+          <Text style={styles.brandName}>Mandinext</Text>
+          <Text style={styles.tagline}>Driver Portal</Text>
+          
+          <View style={styles.statusIndicator}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.statusText}>Online & Ready</Text>
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Content Section */}
+      <ScrollView 
+        style={styles.contentSection} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Welcome Message */}
+        <Animated.View
+          style={[
+            styles.welcomeContainer,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+          ]}
+        >
+          <Text style={styles.welcomeTitle}>Welcome Back!</Text>
+          <Text style={styles.welcomeSubtitle}>Ready to start your journey?</Text>
         </Animated.View>
 
         {/* Action Cards */}
-        <View style={styles.cardsContainer}>
-          {/* New Ride Card */}
-          <Animated.View
-            style={{
-              transform: [
-                { translateY: slideAnim1 },
-                { scale: scaleAnim1 }
-              ]
-            }}
-          >
-            <TouchableOpacity
-              style={[styles.actionCard, styles.newRideCard]}
-              onPress={handleNewRide}
-              activeOpacity={0.85}
-            >
-              <View style={styles.cardIconSection}>
-                <View style={styles.newRideIconBg}>
-                  <Text style={styles.cardIcon}>🚛</Text>
-                </View>
-              </View>
-              <View style={styles.cardTextSection}>
-                <Text style={styles.cardTitle}>Start New Journey</Text>
-                <Text style={styles.cardDescription}>
-                  Begin fresh agricultural delivery
-                </Text>
-                <View style={styles.cardFeatures}>
-                  <Text style={styles.featureTag}>• Route Planning</Text>
-                  <Text style={styles.featureTag}>• Live GPS</Text>
-                </View>
-              </View>
-              <View style={styles.cardArrow}>
-                <Text style={styles.arrowText}>→</Text>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Continue Ride Card */}
-          <Animated.View
-            style={{
-              transform: [
-                { translateY: slideAnim2 },
-                { scale: scaleAnim2 }
-              ]
-            }}
-          >
-            <TouchableOpacity
-              style={[styles.actionCard, styles.continueRideCard]}
-              onPress={handleContinueRide}
-              activeOpacity={0.85}
-            >
-              <View style={styles.cardIconSection}>
-                <View style={styles.continueRideIconBg}>
-                  <Text style={styles.cardIcon}>▶️</Text>
-                </View>
-              </View>
-              <View style={styles.cardTextSection}>
-                <Text style={[styles.cardTitle, styles.continueTitle]}>
-                  Continue Journey
-                </Text>
-                <Text style={[styles.cardDescription, styles.continueDescription]}>
-                  Resume your active delivery
-                </Text>
-                <View style={styles.cardFeatures}>
-                  <Text style={[styles.featureTag, styles.continueFeature]}>
-                    • Track Progress
-                  </Text>
-                  <Text style={[styles.featureTag, styles.continueFeature]}>
-                    • Update Status
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.cardArrow}>
-                <Text style={[styles.arrowText, styles.continueArrow]}>→</Text>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-
-        {/* Bottom Info */}
         <Animated.View
           style={[
-            styles.bottomInfo,
+            styles.actionsContainer,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+          ]}
+        >
+          {/* Primary Action - Start New Journey */}
+          <TouchableOpacity
+            style={styles.primaryCard}
+            onPress={handleNewRide}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['#10b981', '#059669']}
+              style={styles.primaryCardGradient}
+            >
+              <View style={styles.cardLayout}>
+                <View style={styles.cardIconSection}>
+                  <View style={styles.primaryIconContainer}>
+                    <Text style={styles.primaryIcon}>🚚</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.cardTextSection}>
+                  <Text style={styles.primaryTitle}>Start New Journey</Text>
+                  <Text style={styles.primarySubtitle}>Begin a fresh delivery route with optimized path planning</Text>
+                </View>
+                
+                <View style={styles.cardActionSection}>
+                  <View style={styles.primaryArrowContainer}>
+                    <Text style={styles.primaryArrow}>→</Text>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Secondary Action - Continue Journey */}
+          <TouchableOpacity
+            style={styles.secondaryCard}
+            onPress={handleContinueRide}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['#ffffff', '#f8fafc']}
+              style={styles.secondaryCardGradient}
+            >
+              <View style={styles.cardLayout}>
+                <View style={styles.cardIconSection}>
+                  <View style={styles.secondaryIconContainer}>
+                    <Text style={styles.secondaryIcon}>▶️</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.cardTextSection}>
+                  <Text style={styles.secondaryTitle}>Continue Journey</Text>
+                  <Text style={styles.secondarySubtitle}>Resume your active delivery and track progress</Text>
+                </View>
+                
+                <View style={styles.cardActionSection}>
+                  <View style={styles.secondaryArrowContainer}>
+                    <Text style={styles.secondaryArrow}>→</Text>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* System Status */}
+        <Animated.View
+          style={[
+            styles.systemStatusContainer,
             { opacity: fadeAnim }
           ]}
         >
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Today's Weather:</Text>
-            <Text style={styles.infoValue}>Perfect for Transport 🌤️</Text>
-          </View>
-          <View style={styles.trustBadges}>
-            <View style={styles.trustItem}>
-              <Text style={styles.trustNumber}>24/7</Text>
-              <Text style={styles.trustLabel}>Support</Text>
-            </View>
-            <View style={styles.trustDivider} />
-            <View style={styles.trustItem}>
-              <Text style={styles.trustNumber}>Secure</Text>
-              <Text style={styles.trustLabel}>Transport</Text>
-            </View>
-            <View style={styles.trustDivider} />
-            <View style={styles.trustItem}>
-              <Text style={styles.trustNumber}>Real-time</Text>
-              <Text style={styles.trustLabel}>Updates</Text>
-            </View>
+          <View style={styles.systemStatusCard}>
+            <LinearGradient
+              colors={['#ffffff', '#f1f5f9']}
+              style={styles.systemStatusGradient}
+            >
+              <View style={styles.systemStatusLayout}>
+                <View style={styles.systemIconContainer}>
+                  <View style={styles.systemIcon}>
+                    <Text style={styles.systemEmoji}>⚡</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.systemTextContainer}>
+                  <Text style={styles.systemTitle}>All Systems Operational</Text>
+                  <Text style={styles.systemSubtitle}>GPS • Navigation • Communication</Text>
+                </View>
+                
+                <View style={styles.systemIndicatorContainer}>
+                  <View style={styles.systemStatusDot} />
+                </View>
+              </View>
+            </LinearGradient>
           </View>
         </Animated.View>
-      </View>
+
+        {/* Bottom Spacer */}
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -251,267 +200,334 @@ export default function StartRideScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F1E2B', // Deep agritech blue-green
-  },
-  
-  // Background Pattern
-  backgroundPattern: {
-    position: 'absolute',
-    width: width,
-    height: height,
-  },
-  topCircle: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    top: -100,
-    right: -80,
-    backgroundColor: 'rgba(76, 175, 80, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.15)',
-  },
-  bottomCircle: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    bottom: -50,
-    left: -60,
-    backgroundColor: 'rgba(33, 150, 243, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(33, 150, 243, 0.12)',
-  },
-  fieldLines: {
-    position: 'absolute',
-    width: width,
-    height: height,
-    opacity: 0.03,
-  },
-  fieldLine: {
-    position: 'absolute',
-    width: '100%',
-    height: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#f5f7fa',
   },
 
-  // Header
-  header: {
+  // Header Section
+  headerSection: {
+    height: 260,
+    position: 'relative',
+  },
+
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 260,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+
+  headerContent: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: 20,
     paddingHorizontal: 24,
-    paddingBottom: 32,
   },
+
+  logoWrapper: {
+    marginBottom: 20,
+  },
+
   logoContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: 'rgba(76, 175, 80, 0.15)',
-    borderRadius: 24,
+    width: 72,
+    height: 72,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
     borderWidth: 2,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
+
   brandName: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 1,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    marginBottom: 8,
   },
-  welcomeText: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 16,
+
+  tagline: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
+    letterSpacing: 0.5,
+    marginBottom: 20,
   },
-  statusBadge: {
+
+  statusIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.4)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
-  statusDot: {
+
+  onlineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#10b981',
     marginRight: 8,
   },
+
   statusText: {
-    color: '#4CAF50',
     fontSize: 14,
+    color: '#10b981',
     fontWeight: '600',
   },
 
-  // Content
-  content: {
+  // Content Section
+  contentSection: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
-  questionSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  questionText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
   },
 
-  // Cards
-  cardsContainer: {
-    gap: 16,
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+  },
+
+  welcomeContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 24,
+  },
+
+  // Action Cards
+  actionsContainer: {
     marginBottom: 32,
   },
-  actionCard: {
+
+  primaryCard: {
+    marginBottom: 20,
+    borderRadius: 24,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+
+  primaryCardGradient: {
+    borderRadius: 24,
+    padding: 24,
+  },
+
+  secondaryCard: {
+    borderRadius: 24,
+    shadowColor: '#1e293b',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+
+  secondaryCardGradient: {
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+
+  cardLayout: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
-  newRideCard: {
-    backgroundColor: '#4CAF50', // Agritech green
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  continueRideCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Semi-transparent white
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-  },
+
   cardIconSection: {
-    marginRight: 16,
+    marginRight: 20,
   },
-  newRideIconBg: {
-    width: 60,
-    height: 60,
+
+  primaryIconContainer: {
+    width: 64,
+    height: 64,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  continueRideIconBg: {
-    width: 60,
-    height: 60,
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    borderRadius: 16,
+
+  secondaryIconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#dbeafe',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardIcon: {
-    fontSize: 24,
+
+  primaryIcon: {
+    fontSize: 32,
   },
+
+  secondaryIcon: {
+    fontSize: 28,
+  },
+
   cardTextSection: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: 18,
+
+  primaryTitle: {
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  continueTitle: {
-    color: '#FFFFFF',
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#ffffff',
     marginBottom: 8,
-    lineHeight: 18,
-  },
-  continueDescription: {
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  cardFeatures: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  featureTag: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginRight: 12,
-    fontWeight: '500',
-  },
-  continueFeature: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  cardArrow: {
-    marginLeft: 12,
-  },
-  arrowText: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  continueArrow: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    letterSpacing: -0.3,
   },
 
-  // Bottom Info
-  bottomInfo: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: 32,
+  secondaryTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 8,
+    letterSpacing: -0.3,
   },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  infoLabel: {
-    color: 'rgba(255, 255, 255, 0.7)',
+
+  primarySubtitle: {
     fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
+    lineHeight: 20,
   },
-  infoValue: {
-    color: '#FFFFFF',
+
+  secondarySubtitle: {
     fontSize: 14,
-    fontWeight: '600',
+    color: '#64748b',
+    fontWeight: '500',
+    lineHeight: 20,
   },
-  trustBadges: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(76, 175, 80, 0.15)',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.25)',
+
+  cardActionSection: {
+    marginLeft: 16,
   },
-  trustItem: {
-    flex: 1,
+
+  primaryArrowContainer: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  trustNumber: {
+
+  secondaryArrowContainer: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  primaryArrow: {
+    fontSize: 20,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+
+  secondaryArrow: {
+    fontSize: 20,
+    color: '#3b82f6',
+    fontWeight: 'bold',
+  },
+
+  // System Status
+  systemStatusContainer: {
+    marginBottom: 32,
+  },
+
+  systemStatusCard: {
+    borderRadius: 20,
+    shadowColor: '#1e293b',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  systemStatusGradient: {
+    borderRadius: 20,
+    padding: 20,
+  },
+
+  systemStatusLayout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  systemIconContainer: {
+    marginRight: 16,
+  },
+
+  systemIcon: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#fef3c7',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  systemEmoji: {
+    fontSize: 24,
+  },
+
+  systemTextContainer: {
+    flex: 1,
+  },
+
+  systemTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#4CAF50',
-    marginBottom: 2,
+    color: '#1e293b',
+    marginBottom: 4,
+    letterSpacing: -0.2,
   },
-  trustLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+
+  systemSubtitle: {
+    fontSize: 14,
+    color: '#64748b',
     fontWeight: '500',
   },
-  trustDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginHorizontal: 12,
+
+  systemIndicatorContainer: {
+    marginLeft: 12,
+  },
+
+  systemStatusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10b981',
+  },
+
+  bottomSpacer: {
+    height: 40,
   },
 });

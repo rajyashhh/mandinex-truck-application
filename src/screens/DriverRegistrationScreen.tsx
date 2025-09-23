@@ -223,35 +223,58 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
 
   // Updated handleContinue with AsyncStorage and database update
   const handleContinue = async () => {
+    console.log('=== REGISTRATION PROCESS STARTED ===');
+    console.log('Driver Name:', driverName);
+    console.log('License Number:', licenseNumber);
+    console.log('Phone:', phone);
+    console.log('Is Valid:', isAllFieldsValid);
+  
     if (!isAllFieldsValid) {
       Alert.alert('Incomplete Information', 'Please fill all the required fields correctly');
       return;
     }
-
+  
+    // Show loading indicator
+    Alert.alert('Processing', 'Updating your registration details...');
+  
     try {
+      console.log('=== STARTING DATABASE UPDATE ===');
+      
       // Update driver information in database
       const API_URL = __DEV__ 
-        ? 'http://192.168.43.20:3001/api/update-driver'
-        : 'https://your-production-api.com/api/update-driver';
-
+        ? 'https://mandinex-truck-application.onrender.com/api/update-driver'
+        : 'https://mandinex-truck-application.onrender.com/api/update-driver';
+  
+      console.log('API URL:', API_URL);
+  
+      const requestBody = {
+        phone: phone.replace('+91', ''), // Remove country code
+        driverName: driverName.trim(),
+        licenseNumber: licenseNumber.trim(),
+      };
+      console.log('Request Body:', requestBody);
+  
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          phone: phone.replace('+91', ''), // Remove country code
-          driverName: driverName.trim(),
-          licenseNumber: licenseNumber.trim(),
-        }),
+        body: JSON.stringify(requestBody),
       });
-
+  
+      console.log('Response Status:', response.status);
+      console.log('Response OK:', response.ok);
+  
       const data = await response.json();
+      console.log('Response Data:', data);
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update driver information');
+        throw new Error(data.error || `HTTP ${response.status}: Failed to update driver information`);
       }
-
+  
+      console.log('=== DATABASE UPDATE SUCCESSFUL ===');
+      console.log('=== STARTING ASYNCSTORAGE SAVE ===');
+  
       // Create driver details object
       const driverDetails = {
         driverName: driverName.trim(),
@@ -260,31 +283,62 @@ export default function DriverRegistrationScreen({ navigation, route }: Props) {
         permitFile: vehiclePermitFile,
         registrationDate: new Date().toISOString(),
       };
-
+  
+      console.log('Driver Details to Save:', driverDetails);
+  
       // Store driver details in AsyncStorage
       await AsyncStorage.setItem('driverDetails', JSON.stringify(driverDetails));
       
-      console.log('Driver details saved:', driverDetails);
-      console.log('Database updated:', data);
-
-      Alert.alert(
-        "Registration Successful!",
-        "Welcome to Mandinext. Now enter your ride PIN to start your journey.",
-        [
-          {
-            text: "Continue",
-            onPress: () => {
-              // Navigate to RideStart for PIN entry
-              navigation.navigate('RideStart');
+      console.log('=== ASYNCSTORAGE SAVE SUCCESSFUL ===');
+      console.log('=== STARTING NAVIGATION ===');
+  
+      // Test navigation immediately
+      setTimeout(() => {
+        console.log('Navigation about to execute...');
+        
+        Alert.alert(
+          "Registration Successful!",
+          "Welcome to Mandinext. Now enter your ride PIN to start your journey.",
+          [
+            {
+              text: "Continue",
+              onPress: () => {
+                console.log('User pressed Continue - about to navigate');
+                try {
+                  navigation.navigate('RideStart');
+                  console.log('Navigation command executed');
+                } catch (navError) {
+                  console.error('Navigation Error:', navError);
+                  Alert.alert('Navigation Error', `Failed to navigate: ${navError.message}`);
+                }
+              }
             }
+          ]
+        );
+      }, 1000);
+  
+    } catch (error) {
+      console.log('=== REGISTRATION ERROR ===');
+      console.error('Full Error:', error);
+      console.error('Error Name:', error.name);
+      console.error('Error Message:', error.message);
+      console.error('Error Stack:', error.stack);
+      
+      Alert.alert(
+        'Registration Error', 
+        `Failed to save registration details: ${error.message}\n\nPlease try again.`,
+        [
+          { text: 'OK', style: 'default' },
+          { 
+            text: 'Show Details', 
+            style: 'cancel',
+            onPress: () => console.log('Check console for detailed error logs')
           }
         ]
       );
-    } catch (error) {
-      console.error('Error saving driver details:', error);
-      Alert.alert('Registration Error', 'Failed to save registration details. Please try again.');
     }
   };
+  
 
   // Rest of your component JSX remains the same...
   return (

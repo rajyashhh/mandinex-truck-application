@@ -101,59 +101,129 @@ export default function LoginScreen({ navigation, route }: Props) {
     setIsValidPhone(isValid);
   }, [phoneNumber]);
 
-  const handleSendOTP = async () => {
-    if (!isValidPhone) {
-      Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number');
-      return;
-    }
+const handleSendOTP = async () => {
+  if (!isValidPhone) {
+    Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number');
+    return;
+  }
 
-    // Button press animation
-    Animated.sequence([
-      Animated.timing(buttonScaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonScaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  // Button press animation
+  Animated.sequence([
+    Animated.timing(buttonScaleAnim, {
+      toValue: 0.95,
+      duration: 100,
+      useNativeDriver: true,
+    }),
+    Animated.timing(buttonScaleAnim, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }),
+  ]).start();
 
-    try {
-      // Call our own API to save phone number
-      // Using your computer's IP address for mobile testing
-      const API_URL = __DEV__ 
-        ? 'http://192.168.43.20:3001/api/send-otp'
-        : 'https://your-production-api.com/api/send-otp';
-      
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: phoneNumber
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        // Navigate to OTP screen with driver ID
-        navigation.navigate('OTPVerification', { 
-          phone: '+91' + phoneNumber,
-          rideType: rideType,
-          driverId: data.driverId
-        });
-      } else {
-        throw new Error(data.error || 'Failed to send OTP');
+  try {
+    // Enhanced API URL configuration with multiple fallback options
+    const getApiUrl = () => {
+      if (__DEV__) {
+        // Try different IP configurations for development
+        return 'https://mandinex-truck-application.onrender.com/api/send-otp';
+        // Alternative: 'http://192.168.1.100:3001/api/send-otp' - replace with your actual IP
       }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send OTP. Please try again.');
+      return 'https://mandinex-truck-application.onrender.com/api/send-otp';
+    };
+
+    const API_URL = getApiUrl();
+    
+    // Enhanced logging for debugging
+    console.log('=== OTP REQUEST DEBUG INFO ===');
+    console.log('📱 Platform:', Platform.OS);
+    console.log('🌐 API URL:', API_URL);
+    console.log('📞 Phone Number:', phoneNumber);
+    console.log('🔧 Development Mode:', __DEV__);
+    console.log('⏰ Request Time:', new Date().toISOString());
+    
+    // Add request timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        phone: phoneNumber
+      }),
+      signal: controller.signal, // Add timeout signal
+    });
+
+    clearTimeout(timeoutId); // Clear timeout if request succeeds
+
+    // Enhanced response logging
+    console.log('=== RESPONSE DEBUG INFO ===');
+    console.log('✅ Response Status:', response.status);
+    console.log('📊 Response OK:', response.ok);
+    console.log('🏷️ Response Headers:', JSON.stringify([...response.headers.entries()]));
+    console.log('🔗 Response URL:', response.url);
+    console.log('📝 Response Type:', response.type);
+
+    // Check if response is ok before parsing JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('❌ Error Response Text:', errorText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-  };
+
+    const data = await response.json();
+    console.log('✅ Response Data:', JSON.stringify(data, null, 2));
+    
+    if (data.success) {
+      console.log('🎉 OTP Request Successful - Navigating to OTP screen');
+      // Navigate to OTP screen with driver ID
+      navigation.navigate('OTPVerification', { 
+        phone: '+91' + phoneNumber,
+        rideType: rideType,
+        driverId: data.driverId
+      });
+    } else {
+      throw new Error(data.error || 'Failed to send OTP');
+    }
+  } catch (error) {
+    console.log('=== ERROR DEBUG INFO ===');
+    console.log('❌ Error Type:', error.name);
+    console.log('❌ Error Message:', error.message);
+    console.log('❌ Error Stack:', error.stack);
+    
+    // Specific error handling based on error type
+    let userMessage = 'Failed to send OTP. Please try again.';
+    
+    if (error.name === 'AbortError') {
+      userMessage = 'Request timed out. Please check your internet connection and try again.';
+      console.log('⏰ Request was aborted due to timeout');
+    } else if (error.message.includes('Network request failed')) {
+      userMessage = 'Network connection failed. Please check your internet connection.';
+      console.log('🌐 Network connection issue detected');
+    } else if (error.message.includes('HTTP')) {
+      userMessage = `Server error: ${error.message}`;
+      console.log('🖥️ Server-side error detected');
+    }
+    
+    Alert.alert(
+      'Connection Error', 
+      `${userMessage}\n\nTechnical Details: ${error.message}`,
+      [
+        { text: 'OK', style: 'default' },
+        { 
+          text: 'View Console', 
+          style: 'cancel',
+          onPress: () => console.log('Check React Native console for detailed logs')
+        }
+      ]
+    );
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container}>

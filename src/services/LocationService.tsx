@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, AppStateStatus, Platform, Alert } from 'react-native';
 
 const LOCATION_TASK_NAME = 'background-location-task';
-const API_BASE_URL = 'http://192.168.43.20:3001'; // Update with your server URL
+const API_BASE_URL = 'https://mandinex-truck-application.onrender.com'; // Update with your server URL
 const LOCATION_UPDATE_INTERVAL = 30000; // Update every 30 seconds
 const MIN_DISTANCE_UPDATE = 20; // Update if moved more than 20 meters
 
