@@ -15,6 +15,8 @@ import {
   SafeAreaView,
   ImageBackground,
   Modal,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import LocationService from '../services/LocationService';
@@ -49,7 +51,25 @@ export default function PorterDriverScreen({ route }: any) {
     // Set up periodic status check
     const statusInterval = setInterval(checkLocationStatus, 5000);
     
-    return () => clearInterval(statusInterval);
+    // Handle app state changes for last location saving
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Save last location when app goes to background
+        const activeTripStr = await AsyncStorage.getItem('active_trip');
+        if (activeTripStr) {
+          const locationService = LocationService.getInstance();
+          await locationService.saveLastLocation();
+          await LocationDebugger.log('Auto-saving last location on app background');
+        }
+      }
+    };
+    
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    return () => {
+      clearInterval(statusInterval);
+      appStateSubscription.remove();
+    };
   }, []);
   
   const checkLocationStatus = async () => {
@@ -71,6 +91,20 @@ export default function PorterDriverScreen({ route }: any) {
     setDebugLogs(logs.slice(-20).reverse()); // Show last 20 logs, newest first
   };
   
+  const saveLastLocationManually = async () => {
+    try {
+      const locationService = LocationService.getInstance();
+      await locationService.saveLastLocation();
+      Alert.alert('Success', 'Last location saved successfully');
+      await LocationDebugger.log('Manual last location save', {
+        action: 'saveLastLocation',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save last location');
+    }
+  };
+
   const testLocationUpdate = async () => {
     Alert.alert(
       'Test Location Update',
@@ -647,7 +681,19 @@ const showEmergencyContacts = () => {
                 }}
                 onPress={testLocationUpdate}
               >
-                <Text style={{ color: 'white', textAlign: 'center' }}>Test Location Update</Text>
+                <Text style={{ color: 'white', textAlign: 'center' }}>Test Update</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#f59e0b',
+                  padding: 10,
+                  borderRadius: 5,
+                  flex: 1,
+                }}
+                onPress={saveLastLocationManually}
+              >
+                <Text style={{ color: 'white', textAlign: 'center' }}>Save Last Loc</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -659,7 +705,7 @@ const showEmergencyContacts = () => {
                 }}
                 onPress={loadDebugLogs}
               >
-                <Text style={{ color: 'white', textAlign: 'center' }}>Refresh Logs</Text>
+                <Text style={{ color: 'white', textAlign: 'center' }}>Refresh</Text>
               </TouchableOpacity>
             </View>
             

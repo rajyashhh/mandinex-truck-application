@@ -38,14 +38,19 @@ export default function RideStartScreen({ navigation, route }: any) {
   }, []);
 
   const handleRideStart = async () => {
-    if (pin.trim().length === 0) return;
+    if (pin.trim().length === 0) {
+      Alert.alert("Error", "Please enter the ride PIN provided by the farmer.");
+      return;
+    }
+    
+    if (pin.trim().length !== 6) {
+      Alert.alert("Error", "PIN must be 6 digits.");
+      return;
+    }
+    
     setLoading(true);
 
-    // Replace this check with your actual backend check
-    const correctPin = "123456"; // Example
-
-    if (pin.trim() === correctPin) {
-      try {
+    try {
         // Get driver details from AsyncStorage
         const savedDriverDetails = await AsyncStorage.getItem('driverDetails');
         let driverDetails: DriverDetails;
@@ -61,6 +66,45 @@ export default function RideStartScreen({ navigation, route }: any) {
             license: route?.params?.license || "Not provided",
             permitFile: route?.params?.permitFile || null,
           };
+        }
+        
+        // Request location permission
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Location Permission Required",
+            "Please enable location access to start the trip.",
+            [{ text: "OK" }]
+          );
+          setLoading(false);
+          return;
+        }
+        
+        // Get current location
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = currentLocation.coords;
+        
+        // Call API to validate PIN and start trip
+        const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL || 'http://192.168.168.20:3001';
+        const response = await fetch(`${serverUrl}/api/start-trip`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            driverPhone: driverDetails.phone,
+            ridePin: pin.trim(),
+            latitude,
+            longitude,
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          setLoading(false);
+          Alert.alert("Invalid PIN", result.error || "Please check with the farmer for correct PIN.");
+          return;
         }
 
         // Start background location tracking
@@ -99,10 +143,6 @@ export default function RideStartScreen({ navigation, route }: any) {
         setLoading(false);
         Alert.alert("Error", "Failed to start trip. Please try again.");
       }
-    } else {
-      setLoading(false);
-      Alert.alert("No ride assigned", "No ride is assigned to you with this ride pin.");
-    }
   };
 
   return (
@@ -146,9 +186,11 @@ export default function RideStartScreen({ navigation, route }: any) {
             </Text>
           </View>
           
-          {/* Debug info - remove in production */}
-          <View style={styles.debugInfo}>
-            <Text style={styles.debugText}>Debug: Use PIN "123456" to test</Text>
+          <View style={styles.tipBox}>
+            <Text style={styles.tipBoxEmoji}>🔑</Text>
+            <Text style={styles.tipBoxText}>
+              Get the 6-digit PIN from the farmer to start the trip.
+            </Text>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -223,20 +265,4 @@ const styles = StyleSheet.create({
   },
   tipBoxEmoji: { fontSize: 21, marginRight: 11 },
   tipBoxText: { fontSize: 15, color: "#337A4E", fontWeight: "600", lineHeight: 21 },
-  
-  // Debug info styles - remove in production
-  debugInfo: {
-    marginTop: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#AAD1A6",
-  },
-  debugText: {
-    fontSize: 14,
-    color: "#337A4E",
-    textAlign: "center",
-    fontWeight: "600",
-  },
 });

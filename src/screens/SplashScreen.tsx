@@ -116,7 +116,7 @@ export default function SplashScreen({ navigation }: Props) {
 
     // Navigate after 3 seconds
     const timer = setTimeout(() => {
-      navigation.replace('StartRide');
+      navigation.replace('RideStart');
     }, 3500);
 
     return () => clearTimeout(timer);
