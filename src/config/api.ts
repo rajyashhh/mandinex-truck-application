@@ -1,7 +1,7 @@
 // API Configuration
 // Update the PRODUCTION_URL when you deploy your server
 
-const DEV_URL = 'http://192.168.168.20:3001';
+const DEV_URL = 'https://mandinex-truck-application.onrender.com';
 const PRODUCTION_URL = 'https://mandinex-truck-application.onrender.com';
 
 // For testing with ngrok, update this:

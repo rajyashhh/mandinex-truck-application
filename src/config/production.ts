@@ -1,7 +1,7 @@
 // Production configuration
 export const PRODUCTION_CONFIG = {
   // Update this with your production server URL
-  API_URL: process.env.API_URL || 'https://your-production-domain.com/api',
+  API_URL: process.env.API_URL || 'https://mandinex-truck-application.onrender.com/api',
   
   // Location update intervals (in milliseconds)
   LOCATION_UPDATE_INTERVAL: 30000, // 30 seconds

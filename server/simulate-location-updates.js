@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
 // Configuration
-const API_BASE = 'http://192.168.43.20:3001';
+const API_BASE = 'https://mandinex-truck-application.onrender.com';
 const DRIVER_PHONE = '7985113984';
 const TRIP_PIN = '123456';
 

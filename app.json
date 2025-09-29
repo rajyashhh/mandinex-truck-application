@@ -28,7 +28,10 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Mandinex needs to track your location during trips for driver and cargo safety.",
         "NSLocationWhenInUseUsageDescription": "Mandinex needs to access your location to show your current position.",
         "NSLocationAlwaysUsageDescription": "Mandinex needs to track your location in the background during active trips.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       }
     },
     "android": {
@@ -40,9 +43,11 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.rajyashhh.mandiplus",
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -82,8 +87,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "85ee8599-eb59-445d-a227-e49bc24db9cc"
+        "projectId": "8d660707-0499-46d9-a61a-78f7cf5a204b"
       }
-    }
+    },
+    "owner": "trial01234"
   }
 }
