@@ -85,7 +85,7 @@ export default function RideStartScreen({ navigation, route }: any) {
         const { latitude, longitude } = currentLocation.coords;
         
         // Call API to validate PIN and start trip
-        const serverUrl = process.env.EXPO_PUBLIC_SERVER_URL || 'http://192.168.168.20:3001';
+        const serverUrl = 'https://mandinex-truck-application.onrender.com';
         const response = await fetch(`${serverUrl}/api/start-trip`, {
           method: 'POST',
           headers: {

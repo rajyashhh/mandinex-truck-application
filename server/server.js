@@ -123,13 +123,15 @@ app.post('/api/start-trip', async (req, res) => {
     }
     
     // Validate PIN against trips table from AgriBuild
+    // Now also checking for 'active' status to allow re-joining
     const pinValidation = await pool.query(
       `SELECT t.id, t.vehicle_id, t.mandi_buyer_pin, t.status,
-              v.vehicle_number, v.driver_id as assigned_driver_id
+              v.vehicle_number, v.driver_id as assigned_driver_id,
+              t.driver_phone as current_driver_phone
        FROM trips t
        JOIN vehicles v ON t.vehicle_id = v.id
        WHERE t.mandi_buyer_pin = $1 
-       AND t.status IN ('scheduled', 'pending')
+       AND t.status IN ('scheduled', 'pending', 'active')
        LIMIT 1`,
       [ridePin]
     );
@@ -140,6 +142,36 @@ app.post('/api/start-trip', async (req, res) => {
     
     const validTrip = pinValidation.rows[0];
     
+    // Check if this is an active trip being re-joined
+    if (validTrip.status === 'active') {
+      // Check if it's the same driver re-joining
+      if (validTrip.current_driver_phone && 
+          validTrip.current_driver_phone !== normalizedPhone && 
+          validTrip.current_driver_phone !== driverPhone) {
+        return res.status(403).json({ 
+          error: 'This trip is already active with another driver. Please contact support if this is an error.' 
+        });
+      }
+      
+      console.log(`Driver ${normalizedPhone} is re-joining active trip ${validTrip.id}`);
+      
+      // For active trips, just update the location and continue
+      // No need to update trip status or start time
+    } else {
+      // For new trips (scheduled/pending), update status to active
+      const updateResult = await pool.query(
+        `UPDATE trips 
+         SET status = 'active',
+             driver_id = $1,
+             driver_phone = $2,
+             trip_start_time = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3
+         RETURNING id`,
+        [driverId, normalizedPhone, validTrip.id]
+      );
+    }
+    
     // Optional: Check if driver is assigned to this vehicle
     // BYPASS: Skip this check for test drivers
     if (validTrip.assigned_driver_id && validTrip.assigned_driver_id !== driverId && !normalizedPhone.includes('Test')) {
@@ -147,30 +179,25 @@ app.post('/api/start-trip', async (req, res) => {
       // return res.status(403).json({ error: 'You are not authorized for this vehicle.' });
     }
 
-    // Update the AgriBuild trip to active and set driver info
-    const updateResult = await pool.query(
-      `UPDATE trips 
-       SET status = 'active',
-           driver_id = $1,
-           driver_phone = $2,
-           trip_start_time = CURRENT_TIMESTAMP,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
-       RETURNING id`,
-      [driverId, normalizedPhone, validTrip.id]
+    // Initialize current location (trip_id in current_locations stores the pin, not the trip table id)
+    // First, mark any previous trips as inactive for this driver
+    await pool.query(
+      `UPDATE current_locations 
+       SET trip_active = false 
+       WHERE driver_id = $1`,
+      [driverId]
     );
     
-    const actualTripId = updateResult.rows[0].id;
-
-    // Initialize current location (trip_id in current_locations stores the pin, not the trip table id)
+    // Now insert new location for this trip
     await pool.query(
       `INSERT INTO current_locations (driver_id, driver_phone, latitude, longitude, trip_id, trip_active)
        VALUES ($1, $2, $3, $4, $5, true)
-       ON CONFLICT (driver_id) 
+       ON CONFLICT (trip_id) 
        DO UPDATE SET 
+         driver_id = EXCLUDED.driver_id,
+         driver_phone = EXCLUDED.driver_phone,
          latitude = EXCLUDED.latitude,
          longitude = EXCLUDED.longitude,
-         trip_id = EXCLUDED.trip_id,
          trip_active = true,
          last_updated = CURRENT_TIMESTAMP`,
       [driverId, normalizedPhone, latitude, longitude, ridePin]  // Store ridePin as trip_id with normalized phone
@@ -179,7 +206,8 @@ app.post('/api/start-trip', async (req, res) => {
     res.json({ 
       success: true, 
       tripId,
-      message: 'Trip started successfully'
+      message: validTrip.status === 'active' ? 'Trip resumed successfully' : 'Trip started successfully',
+      isResumed: validTrip.status === 'active'
     });
   } catch (error) {
     console.error('Database error:', error);
@@ -211,28 +239,28 @@ app.post('/api/update-location', async (req, res) => {
     const normalizedPhone = driverPhone.replace(/^\+91/, '');
     
     // Get driver ID and trip info - try both phone formats
+    // Note: tripId here is actually the PIN
     const tripResult = await pool.query(
       `SELECT driver_id, trip_start_time 
        FROM trips 
        WHERE mandi_buyer_pin = $1 
-       AND (driver_phone = $2 OR driver_phone = $3)
        AND status = 'active'`,
-      [tripId, normalizedPhone, driverPhone]
+      [tripId]  // Just check PIN and active status
     );
 
     if (tripResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Trip not found' });
+      return res.status(404).json({ error: 'Trip not found or not active' });
     }
 
     const { driver_id: driverId, trip_start_time: startTime } = tripResult.rows[0];
 
-    // Update current location
+    // Update current location by trip_id (PIN) instead of driver_id
     await pool.query(
       `UPDATE current_locations 
        SET latitude = $1, longitude = $2, speed = $3, heading = $4, 
            altitude = $5, accuracy = $6, last_updated = CURRENT_TIMESTAMP
-       WHERE driver_id = $7`,
-      [latitude, longitude, speed, heading, altitude, accuracy, driverId]
+       WHERE trip_id = $7 AND trip_active = true`,
+      [latitude, longitude, speed, heading, altitude, accuracy, tripId]  // Use tripId (PIN) instead of driverId
     );
 
     // Check if we need to save a snapshot (6, 12, or 24 hours)
