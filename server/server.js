@@ -254,14 +254,62 @@ app.post('/api/update-location', async (req, res) => {
 
     const { driver_id: driverId, trip_start_time: startTime } = tripResult.rows[0];
 
-    // Update current location by trip_id (PIN) instead of driver_id
-    await pool.query(
-      `UPDATE current_locations 
-       SET latitude = $1, longitude = $2, speed = $3, heading = $4, 
-           altitude = $5, accuracy = $6, last_updated = CURRENT_TIMESTAMP
-       WHERE trip_id = $7 AND trip_active = true`,
-      [latitude, longitude, speed, heading, altitude, accuracy, tripId]  // Use tripId (PIN) instead of driverId
-    );
+    // Check if driver_id is NULL (can happen in MVP when driver not registered)
+    if (!driverId) {
+      console.log('Warning: driver_id is NULL for trip', tripId);
+      // For MVP, we'll create a temporary driver_id based on the PIN
+      // This ensures location updates work even without driver registration
+      const tempDriverId = parseInt(tripId) || 999999; // Use PIN as driver_id or fallback
+      
+      // First, try to update trips table with this temporary driver_id
+      await pool.query(
+        `UPDATE trips SET driver_id = $1 WHERE mandi_buyer_pin = $2 AND driver_id IS NULL`,
+        [tempDriverId, tripId]
+      );
+      
+      // Use the temporary driver_id for location tracking
+      const updateResult = await pool.query(
+        `INSERT INTO current_locations (driver_id, driver_phone, trip_id, latitude, longitude, speed, heading, altitude, accuracy, trip_active, last_updated)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, CURRENT_TIMESTAMP)
+         ON CONFLICT (driver_id) 
+         DO UPDATE SET 
+           trip_id = EXCLUDED.trip_id,
+           latitude = EXCLUDED.latitude,
+           longitude = EXCLUDED.longitude,
+           speed = EXCLUDED.speed,
+           heading = EXCLUDED.heading,
+           altitude = EXCLUDED.altitude,
+           accuracy = EXCLUDED.accuracy,
+           trip_active = true,
+           last_updated = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [tempDriverId, normalizedPhone || tripId, tripId, latitude, longitude, speed, heading, altitude, accuracy]
+      );
+      
+      console.log(`Location updated for trip ${tripId} with temp driver_id ${tempDriverId}:`, updateResult.rows[0] ? 'Success' : 'Failed');
+      
+    } else {
+      // Normal case when driver_id exists
+      const updateResult = await pool.query(
+        `INSERT INTO current_locations (driver_id, driver_phone, trip_id, latitude, longitude, speed, heading, altitude, accuracy, trip_active, last_updated)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, CURRENT_TIMESTAMP)
+         ON CONFLICT (driver_id) 
+         DO UPDATE SET 
+           trip_id = EXCLUDED.trip_id,
+           latitude = EXCLUDED.latitude,
+           longitude = EXCLUDED.longitude,
+           speed = EXCLUDED.speed,
+           heading = EXCLUDED.heading,
+           altitude = EXCLUDED.altitude,
+           accuracy = EXCLUDED.accuracy,
+           trip_active = true,
+           last_updated = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [driverId, normalizedPhone, tripId, latitude, longitude, speed, heading, altitude, accuracy]
+      );
+      
+      console.log(`Location updated for trip ${tripId}:`, updateResult.rows[0] ? 'Success' : 'Failed');
+    }
 
     // Check if we need to save a snapshot (6, 12, or 24 hours)
     const hoursSinceStart = (Date.now() - new Date(startTime).getTime()) / (1000 * 60 * 60);
