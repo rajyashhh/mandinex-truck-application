@@ -271,9 +271,10 @@ app.post('/api/update-location', async (req, res) => {
       const updateResult = await pool.query(
         `INSERT INTO current_locations (driver_id, driver_phone, trip_id, latitude, longitude, speed, heading, altitude, accuracy, trip_active, last_updated)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, CURRENT_TIMESTAMP)
-         ON CONFLICT (driver_id) 
+         ON CONFLICT (trip_id) 
          DO UPDATE SET 
-           trip_id = EXCLUDED.trip_id,
+           driver_id = EXCLUDED.driver_id,
+           driver_phone = EXCLUDED.driver_phone,
            latitude = EXCLUDED.latitude,
            longitude = EXCLUDED.longitude,
            speed = EXCLUDED.speed,
@@ -293,9 +294,10 @@ app.post('/api/update-location', async (req, res) => {
       const updateResult = await pool.query(
         `INSERT INTO current_locations (driver_id, driver_phone, trip_id, latitude, longitude, speed, heading, altitude, accuracy, trip_active, last_updated)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, CURRENT_TIMESTAMP)
-         ON CONFLICT (driver_id) 
+         ON CONFLICT (trip_id) 
          DO UPDATE SET 
-           trip_id = EXCLUDED.trip_id,
+           driver_id = EXCLUDED.driver_id,
+           driver_phone = EXCLUDED.driver_phone,
            latitude = EXCLUDED.latitude,
            longitude = EXCLUDED.longitude,
            speed = EXCLUDED.speed,
